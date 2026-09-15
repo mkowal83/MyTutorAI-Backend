@@ -1,0 +1,18 @@
+<Project>
+
+  <!--
+    Central Package Management (CPM) — a single place for NuGet package versions across the repository.
+    Projects only declare <PackageReference Include="..." /> (without the Version attribute);
+    the version comes from <PackageVersion> below.
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

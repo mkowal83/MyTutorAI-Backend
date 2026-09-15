@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    Common MSBuild settings for all projects in the repository.
+    This file is automatically imported by every .csproj below the root directory.
+    NuGet package versions are managed centrally in Directory.Packages.props
+  -->
+
+  <!-- Language and compiler -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+
+</Project>
