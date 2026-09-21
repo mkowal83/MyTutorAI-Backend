@@ -1,5 +1,60 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
 		<ProjectReference Include="..\MyTutorAI.Application\MyTutorAI.Application.csproj" />
-	</ItemGroup>	
+	</ItemGroup>
+
+	<!--
+	EN: Scriban — prompt template engine.
+	    Microsoft.Extensions.FileProviders.Physical — reading template files from disk (Development).
+	    Microsoft.Extensions.DependencyInjection.Abstractions — IServiceCollection for the Add* registration extensions.
+	PL: Scriban — silnik szablonów promptów.
+	    Microsoft.Extensions.FileProviders.Physical — odczyt plików szablonów z dysku (Development).
+	    Microsoft.Extensions.DependencyInjection.Abstractions — IServiceCollection dla metod rozszerzających Add*.
+	-->
+	<ItemGroup>
+		<PackageReference Include="Scriban" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+	</ItemGroup>
+
+	<!--
+	EN: LLM prompt templates (Scriban) are compiled into the assembly as Embedded Resources,
+	    so they ship with the binary and are versioned together with the code.
+	    LogicalName is flattened to the bare file name, so the resource is loaded via
+	    GetManifestResourceStream("dialogue-generation-system.scriban"), independent of RootNamespace and folder layout.
+	    Consequence: file names must be unique across all subfolders of Prompts.
+
+	PL: Szablony promptów LLM (Scriban) są kompilowane do assembly jako Embedded Resource,
+	    dzięki czemu są dostarczane razem z binarką i wersjonowane razem z kodem.
+	    LogicalName jest spłaszczony do samej nazwy pliku, więc zasób ładujemy przez
+	    GetManifestResourceStream("dialogue-generation-system.scriban"), niezależnie od RootNamespace i struktury katalogów.
+	    Konsekwencja: nazwy plików muszą być unikalne we wszystkich podfolderach Prompts.
+	-->
+	<ItemGroup>
+		<EmbeddedResource Include="Prompts\**\*.scriban">
+			<LogicalName>%(Filename)%(Extension)</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<!--
+	EN: Copies *.scriban files to the output directory so prompts can be edited and tested
+	    without rebuilding (Development). The same files are also embedded (above), which gives two read paths:
+	    Development reads from disk via PhysicalFileProvider;
+	    Production, or a missing file on disk, falls back to the embedded resource.
+	    <None Update> is used because the SDK's default None glob already contains these files;
+	    <None Include> would create a duplicate item.
+	    PreserveNewest copies a file only when the source is newer than the output copy.
+
+	PL: Kopiuje pliki *.scriban do katalogu wyjściowego, aby w Development można było edytować
+	    i testować prompty bez przebudowywania projektu. Te same pliki są też osadzone (powyżej),
+	    co daje dwie ścieżki odczytu:
+	    Development czyta z dysku przez PhysicalFileProvider;
+	    Production lub brak pliku na dysku powoduje fallback do zasobu osadzonego.
+	    Użyto <None Update>, bo domyślny glob None z SDK już zawiera te pliki;
+	    <None Include> utworzyłby zduplikowany element.
+	    PreserveNewest kopiuje plik tylko wtedy, gdy źródło jest nowsze niż kopia w output.
+	-->
+	<ItemGroup>
+		<None Update="Prompts\**\*.scriban" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
 </Project>
