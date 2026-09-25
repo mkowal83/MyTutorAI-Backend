@@ -57,4 +57,10 @@
 	<ItemGroup>
 		<None Update="Prompts\**\*.scriban" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="OpenAI" />
+		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+	</ItemGroup>
 </Project>
