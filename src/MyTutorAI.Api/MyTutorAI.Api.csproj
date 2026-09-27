@@ -1,4 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+	
+	<PropertyGroup>
+	  <UserSecretsId>ffae3e64-12cf-4730-8a26-7e20be35abd4</UserSecretsId>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	  <PackageReference Include="FluentValidation" />
+	  <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+	  <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
+	</ItemGroup>
 	
 	<ItemGroup>
 		<ProjectReference Include="..\MyTutorAI.Application\MyTutorAI.Application.csproj" />

@@ -61,6 +61,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="OpenAI" />
+		<PackageReference Include="Microsoft.Extensions.Http" />
 		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
 	</ItemGroup>
 </Project>

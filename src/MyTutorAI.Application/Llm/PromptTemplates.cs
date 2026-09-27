@@ -14,5 +14,5 @@ public static class PromptTemplates
     /// EN: System prompt of the standalone example-dialogue generator (not tied to a specific student's memory).
     /// PL: Prompt systemowy generatora przykładowego dialogu (niezwiązanego z pamięcią konkretnego ucznia).
     /// </summary>
-    public const string DialogueGenerationSystem = "dialogue-generation-system";
+    public const string DialogueGeneration = "dialogue-generation-system";
 }

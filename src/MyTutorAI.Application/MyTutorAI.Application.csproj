@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<ItemGroup>
+	  <PackageReference Include="FluentValidation" />
+	  <PackageReference Include="Microsoft.Extensions.Options" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\MyTutorAI.Domain\MyTutorAI.Domain.csproj" />
 	</ItemGroup>
 </Project>

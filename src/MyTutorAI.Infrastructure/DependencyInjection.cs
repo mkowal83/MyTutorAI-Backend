@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using MyTutorAI.Application.Llm;
+using MyTutorAI.Infrastructure.Llm;
 using MyTutorAI.Infrastructure.Prompting;
 
 namespace MyTutorAI.Infrastructure;
@@ -47,6 +48,31 @@ public static class DependencyInjection
                 : embedded;
         });
         services.AddSingleton<IPromptRenderer, ScribanPromptRenderer>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// EN: Registers <see cref="IStructuredOutputClient"/> as a typed <see cref="HttpClient"/> client. <c>LlmOptions</c> must be bound by the caller; the HTTP resilience pipeline is not configured yet.
+    /// PL: Rejestruje <see cref="IStructuredOutputClient"/> jako typowanego klienta <see cref="HttpClient"/>. <c>LlmOptions</c> musi podpiąć wywołujący; pipeline odporności HTTP nie jest jeszcze skonfigurowany.
+    /// </summary>
+    /// <param name="services">
+    /// EN: Service collection to extend. Must not be null.
+    /// PL: Kolekcja usług do rozszerzenia. Nie może być null.
+    /// </param>
+    /// <returns>
+    /// EN: The same <paramref name="services"/> instance, for chaining.
+    /// PL: Ta sama instancja <paramref name="services"/>, do łańcuchowania wywołań.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// EN: <paramref name="services"/> is null.
+    /// PL: <paramref name="services"/> jest null.
+    /// </exception>
+    public static IServiceCollection AddLlmClient(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddHttpClient<IStructuredOutputClient, StructuredOutputClient>();
 
         return services;
     }
