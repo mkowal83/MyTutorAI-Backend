@@ -43,7 +43,7 @@ public static class DemoEndpoints
                 .AddEndpointFilter<ValidationFilter<DialogueGenerationRequest>>()
                 //.RequireRateLimiting(MyTutorAI.Infrastructure.DependencyInjection.LlmRateLimiterPolicyName)
                 .WithName("Demo_GenerateDialogue")
-                .WithSummary("Generuje demonstracyjny dialog ćwiczeniowy o zadanym temacie (LLM)")
+                .WithSummary("Generates a demo practice dialogue on the given topic (LLM)")
                 .WithTags("Demo")
                 .Produces<DialogueGenerationResponse>(StatusCodes.Status200OK)
                 .ProducesValidationProblem()

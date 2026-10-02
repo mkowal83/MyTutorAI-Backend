@@ -30,7 +30,7 @@ public sealed record PromptMessage
     {
         if (!Enum.IsDefined(role))
         {
-            throw new ArgumentOutOfRangeException(nameof(role), role, "Nieznana rola wiadomości promptu.");
+            throw new ArgumentOutOfRangeException(nameof(role), role, "Unknown prompt message role.");
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(text);

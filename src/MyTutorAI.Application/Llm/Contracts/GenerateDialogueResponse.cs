@@ -21,8 +21,8 @@ namespace MyTutorAI.Application.Llm.Contracts;
 /// </param>
 public sealed record DialogueGenerationResponse(
     [property: JsonPropertyName("topic")]
-    [property: Description("Temat rozmowy")]
+    [property: Description("Conversation topic")]
     string Topic,
     [property: JsonPropertyName("turns")]
-    [property: Description("Lista tur dialogu dla tematu")]
+    [property: Description("List of dialogue turns for the topic")]
     IReadOnlyList<DialogueTurn> Turns);

@@ -1,8 +1,17 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Options;
+using MyTutorAI.Application.Auth;
+using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Llm;
+using MyTutorAI.Application.Options;
+using MyTutorAI.Application.Users;
+using MyTutorAI.Infrastructure.Common;
 using MyTutorAI.Infrastructure.Llm;
+using MyTutorAI.Infrastructure.Persistence;
 using MyTutorAI.Infrastructure.Prompting;
+using MyTutorAI.Infrastructure.Security;
 
 namespace MyTutorAI.Infrastructure;
 
@@ -73,6 +82,59 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddHttpClient<IStructuredOutputClient, StructuredOutputClient>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// EN: Registers the SQL Server <see cref="AppDbContext"/> and the repositories as scoped. The connection string is read from <see cref="DatabaseOptions"/>, which must be bound (with <c>ValidateOnStart</c>) by the caller. The schema is managed by EF migrations applied outside the application.
+    /// PL: Rejestruje <see cref="AppDbContext"/> dla SQL Server i repozytoria jako scoped. Connection string jest czytany z <see cref="DatabaseOptions"/>, które musi podpiąć wywołujący (z <c>ValidateOnStart</c>). Schemat jest zarządzany migracjami EF stosowanymi poza aplikacją.
+    /// </summary>
+    /// <param name="services">
+    /// EN: Service collection to extend. Must not be null.
+    /// PL: Kolekcja usług do rozszerzenia. Nie może być null.
+    /// </param>
+    /// <returns>
+    /// EN: The same <paramref name="services"/> instance, for chaining.
+    /// PL: Ta sama instancja <paramref name="services"/>, do łańcuchowania wywołań.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// EN: <paramref name="services"/> is null.
+    /// PL: <paramref name="services"/> jest null.
+    /// </exception>
+    public static IServiceCollection AddPersistence(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddDbContext<AppDbContext>((sp, options) =>
+            options.UseSqlServer(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// EN: Registers the stateless authentication services as singletons: <see cref="IPasswordHasher"/> (PBKDF2) and <see cref="IClock"/>.
+    /// PL: Rejestruje bezstanowe usługi uwierzytelniania jako singletony: <see cref="IPasswordHasher"/> (PBKDF2) i <see cref="IClock"/>.
+    /// </summary>
+    /// <param name="services">
+    /// EN: Service collection to extend. Must not be null.
+    /// PL: Kolekcja usług do rozszerzenia. Nie może być null.
+    /// </param>
+    /// <returns>
+    /// EN: The same <paramref name="services"/> instance, for chaining.
+    /// PL: Ta sama instancja <paramref name="services"/>, do łańcuchowania wywołań.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// EN: <paramref name="services"/> is null.
+    /// PL: <paramref name="services"/> jest null.
+    /// </exception>
+    public static IServiceCollection AddAuthServices(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+        services.AddSingleton<IClock, SystemClock>();
 
         return services;
     }

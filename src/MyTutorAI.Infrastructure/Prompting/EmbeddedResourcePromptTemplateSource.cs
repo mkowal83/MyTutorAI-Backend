@@ -74,8 +74,8 @@ public sealed class EmbeddedResourcePromptTemplateSource : IPromptTemplateSource
         {
             var available = string.Join(", ", _assembly.GetManifestResourceNames());
             throw new InvalidOperationException(
-                $"Nie znaleziono szablonu promptu '{resourceName}' w zasobach osadzonych assembly " +
-                $"'{_assembly.GetName().Name}'. Dostępne zasoby: {available}.");
+                $"Prompt template '{resourceName}' was not found in embedded resources of assembly " +
+                $"'{_assembly.GetName().Name}'. Available resources: {available}.");
         }
 
         using var reader = new StreamReader(stream);

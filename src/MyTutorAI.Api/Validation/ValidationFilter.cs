@@ -44,8 +44,8 @@ public sealed class ValidationFilter<TRequest> : IEndpointFilter
 
         var request = context.Arguments.OfType<TRequest>().FirstOrDefault()
             ?? throw new InvalidOperationException(
-                $"Endpoint z {nameof(ValidationFilter<TRequest>)}<{typeof(TRequest).Name}> " +
-                $"nie przyjmuje argumentu typu {typeof(TRequest).Name}.");
+                $"Endpoint with {nameof(ValidationFilter<TRequest>)}<{typeof(TRequest).Name}> " +
+                $"does not accept an argument of type {typeof(TRequest).Name}.");
 
         var result = await validator.ValidateAsync(request, context.HttpContext.RequestAborted);
         if (!result.IsValid)

@@ -21,8 +21,8 @@ namespace MyTutorAI.Application.Llm.Contracts;
 /// </param>
 public sealed record DialogueTurn(
     [property: JsonPropertyName("speaker")]
-    [property: Description("Osoba wypowiadająca kwestię")]
+    [property: Description("Person speaking the line")]
     string Speaker,
     [property: JsonPropertyName("text")]
-    [property: Description("Treść wypowiedzi")]
+    [property: Description("Text of the line")]
     string Text);

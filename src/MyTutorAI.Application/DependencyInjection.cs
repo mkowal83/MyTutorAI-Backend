@@ -1,5 +1,7 @@
+using System.Globalization;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using MyTutorAI.Application.Auth;
 using MyTutorAI.Application.Contracts;
 using MyTutorAI.Application.Demo;
 
@@ -12,8 +14,8 @@ namespace MyTutorAI.Application;
 public static class DependencyInjection
 {
     /// <summary>
-    /// EN: Registers <see cref="GenerateDialogueHandler"/> as scoped and <see cref="DialogueGenerationRequestValidator"/> as the singleton <see cref="IValidator{T}"/> of <see cref="DialogueGenerationRequest"/>. The handler's ports (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>) and <c>FeaturesOptions</c> must be registered separately.
-    /// PL: Rejestruje <see cref="GenerateDialogueHandler"/> jako scoped oraz <see cref="DialogueGenerationRequestValidator"/> jako singletonowy <see cref="IValidator{T}"/> dla <see cref="DialogueGenerationRequest"/>. Porty handlera (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>) i <c>FeaturesOptions</c> trzeba zarejestrować osobno.
+    /// EN: Registers the use-case handlers (<see cref="GenerateDialogueHandler"/>, <see cref="RegisterUserHandler"/>) as scoped and their validators as singleton <see cref="IValidator{T}"/> instances. The handlers' ports (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>, <c>IUserRepository</c>, <c>IPasswordHasher</c>, <c>IClock</c>) and <c>FeaturesOptions</c> must be registered separately.
+    /// PL: Rejestruje handlery przypadków użycia (<see cref="GenerateDialogueHandler"/>, <see cref="RegisterUserHandler"/>) jako scoped, a ich walidatory jako singletonowe <see cref="IValidator{T}"/>. Porty handlerów (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>, <c>IUserRepository</c>, <c>IPasswordHasher</c>, <c>IClock</c>) i <c>FeaturesOptions</c> trzeba zarejestrować osobno.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
@@ -33,6 +35,9 @@ public static class DependencyInjection
 
         services.AddScoped<GenerateDialogueHandler>();
         services.AddSingleton<IValidator<DialogueGenerationRequest>, DialogueGenerationRequestValidator>();
+
+        services.AddScoped<RegisterUserHandler>();
+        services.AddSingleton<IValidator<RegisterRequest>, RegisterRequestValidator>();
 
         return services;
     }

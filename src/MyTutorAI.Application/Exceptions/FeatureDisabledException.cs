@@ -16,7 +16,7 @@ public sealed class FeatureDisabledException : Exception
     /// PL: Nazwa wyłączonej funkcji, np. <c>dialogue</c>.
     /// </param>
     public FeatureDisabledException(string featureName)
-        : base($"Funkcja \"{featureName}\" jest wyłączona w tej instalacji.")
+        : base($"Feature \"{featureName}\" is disabled in this deployment.")
     {
         FeatureName = featureName;
     }

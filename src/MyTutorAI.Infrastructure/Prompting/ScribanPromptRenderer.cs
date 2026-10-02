@@ -100,7 +100,7 @@ public sealed class ScribanPromptRenderer : IPromptRenderer
         catch (ScriptRuntimeException exception)
         {
             throw new InvalidOperationException(
-                $"Renderowanie szablonu promptu '{templateName}' nie powiodło się: {exception.Message}",
+                $"Rendering prompt template '{templateName}' failed: {exception.Message}",
                 exception);
         }
     }
@@ -114,7 +114,7 @@ public sealed class ScribanPromptRenderer : IPromptRenderer
         {
             var messages = string.Join("; ", template.Messages.Select(message => message.Message));
             throw new InvalidOperationException(
-                $"Szablon promptu '{templateName}' ma błędy składni Scriban: {messages}");
+                $"Prompt template '{templateName}' has Scriban syntax errors: {messages}");
         }
 
         return template;

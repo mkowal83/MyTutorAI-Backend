@@ -64,4 +64,15 @@
 		<PackageReference Include="Microsoft.Extensions.Http" />
 		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
 	</ItemGroup>
+
+	<!--
+	EN: Microsoft.EntityFrameworkCore.SqlServer — persistence of durable data (accounts, ...) in SQL Server.
+	    Microsoft.Extensions.Identity.Core — PasswordHasher<TUser> (PBKDF2) behind the IPasswordHasher port.
+	PL: Microsoft.EntityFrameworkCore.SqlServer — persystencja trwałych danych (konta, ...) w SQL Server.
+	    Microsoft.Extensions.Identity.Core — PasswordHasher<TUser> (PBKDF2) za portem IPasswordHasher.
+	-->
+	<ItemGroup>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+		<PackageReference Include="Microsoft.Extensions.Identity.Core" />
+	</ItemGroup>
 </Project>
