@@ -2,11 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
+using MyTutorAI.Application.Abstractions;
 using MyTutorAI.Application.Auth;
 using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Llm;
 using MyTutorAI.Application.Options;
 using MyTutorAI.Application.Users;
+using MyTutorAI.Infrastructure.Auth;
 using MyTutorAI.Infrastructure.Common;
 using MyTutorAI.Infrastructure.Llm;
 using MyTutorAI.Infrastructure.Persistence;
@@ -114,8 +116,8 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// EN: Registers the stateless authentication services as singletons: <see cref="IPasswordHasher"/> (PBKDF2) and <see cref="IClock"/>.
-    /// PL: Rejestruje bezstanowe usługi uwierzytelniania jako singletony: <see cref="IPasswordHasher"/> (PBKDF2) i <see cref="IClock"/>.
+    /// EN: Registers the authentication services: <see cref="IPasswordHasher"/> (PBKDF2) and <see cref="IClock"/> as singletons, the <c>IHttpContextAccessor</c>, and <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) as scoped.
+    /// PL: Rejestruje usługi uwierzytelniania: <see cref="IPasswordHasher"/> (PBKDF2) i <see cref="IClock"/> jako singletony, <c>IHttpContextAccessor</c> oraz <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) jako scoped.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
@@ -135,6 +137,8 @@ public static class DependencyInjection
 
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
         services.AddSingleton<IClock, SystemClock>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return services;
     }
