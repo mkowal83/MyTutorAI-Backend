@@ -62,6 +62,81 @@ namespace MyTutorAI.Infrastructure.Persistence.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("MyTutorAI.Domain.Memory.Core.CoreMemory", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatorName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.PrimitiveCollection<string>("PrimeDirectives")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("CoreMemories");
+                });
+
+            modelBuilder.Entity("MyTutorAI.Domain.Memory.Semantic.StudentProfile", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContextNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Goal")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NativeLanguage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.PrimitiveCollection<string>("Preferences")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("TargetLanguage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("StudentProfiles");
+                });
+
             modelBuilder.Entity("MyTutorAI.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -90,6 +165,196 @@ namespace MyTutorAI.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("MyTutorAI.Domain.Memory.Semantic.StudentProfile", b =>
+                {
+                    b.OwnsOne("MyTutorAI.Domain.Memory.Semantic.CommunicationPreferences", "CommunicationPreferences", b1 =>
+                        {
+                            b1.Property<Guid>("StudentProfileUserId");
+
+                            b1.Property<string>("CorrectionIntensity");
+
+                            b1.Property<string>("FeedbackStyle");
+
+                            b1.Property<string>("Pace");
+
+                            b1.PrimitiveCollection<string>("PreferredFormats")
+                                .IsRequired();
+
+                            b1.HasKey("StudentProfileUserId");
+
+                            b1.ToTable("StudentProfiles");
+
+                            b1
+                                .ToJson("CommunicationPreferences")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudentProfileUserId");
+                        });
+
+                    b.OwnsMany("MyTutorAI.Domain.Memory.Semantic.LearnerGoal", "Goals", b1 =>
+                        {
+                            b1.Property<Guid>("StudentProfileUserId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<string>("Deadline");
+
+                            b1.Property<string>("Goal")
+                                .IsRequired();
+
+                            b1.Property<string>("Reason");
+
+                            b1.Property<string>("SuccessMetric");
+
+                            b1.Property<string>("TargetSituation");
+
+                            b1.HasKey("StudentProfileUserId", "__synthesizedOrdinal");
+
+                            b1.ToTable("StudentProfiles");
+
+                            b1
+                                .ToJson("Goals")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudentProfileUserId");
+                        });
+
+                    b.OwnsOne("MyTutorAI.Domain.Memory.Semantic.PerformanceProfile", "PerformanceProfile", b1 =>
+                        {
+                            b1.Property<Guid>("StudentProfileUserId");
+
+                            b1.PrimitiveCollection<string>("RecurringWeaknesses")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("Strengths")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("SuccessCriteria")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("TargetScenarios")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("ToneTargets")
+                                .IsRequired();
+
+                            b1.HasKey("StudentProfileUserId");
+
+                            b1.ToTable("StudentProfiles");
+
+                            b1
+                                .ToJson("PerformanceProfile")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudentProfileUserId");
+                        });
+
+                    b.OwnsOne("MyTutorAI.Domain.Memory.Semantic.PersonalContext", "PersonalContext", b1 =>
+                        {
+                            b1.Property<Guid>("StudentProfileUserId");
+
+                            b1.PrimitiveCollection<string>("PersonalFacts")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("RelationshipHooks")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("ScheduleConstraints")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("UpcomingEvents")
+                                .IsRequired();
+
+                            b1.HasKey("StudentProfileUserId");
+
+                            b1.ToTable("StudentProfiles");
+
+                            b1
+                                .ToJson("PersonalContext")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudentProfileUserId");
+                        });
+
+                    b.OwnsOne("MyTutorAI.Domain.Memory.Semantic.SemanticSignals", "SemanticSignals", b1 =>
+                        {
+                            b1.Property<Guid>("StudentProfileUserId");
+
+                            b1.PrimitiveCollection<string>("ConfidenceBlockers")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("MotivationDrivers")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("RecurringTopics")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("VocabularyTargets")
+                                .IsRequired();
+
+                            b1.HasKey("StudentProfileUserId");
+
+                            b1.ToTable("StudentProfiles");
+
+                            b1
+                                .ToJson("SemanticSignals")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudentProfileUserId");
+                        });
+
+                    b.OwnsOne("MyTutorAI.Domain.Memory.Semantic.WorkContext", "WorkContext", b1 =>
+                        {
+                            b1.Property<Guid>("StudentProfileUserId");
+
+                            b1.Property<string>("CompanyName");
+
+                            b1.PrimitiveCollection<string>("HighStakesSituations")
+                                .IsRequired();
+
+                            b1.Property<string>("Industry");
+
+                            b1.Property<string>("Profession");
+
+                            b1.PrimitiveCollection<string>("Stakeholders")
+                                .IsRequired();
+
+                            b1.HasKey("StudentProfileUserId");
+
+                            b1.ToTable("StudentProfiles");
+
+                            b1
+                                .ToJson("WorkContext")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("StudentProfileUserId");
+                        });
+
+                    b.Navigation("CommunicationPreferences")
+                        .IsRequired();
+
+                    b.Navigation("Goals");
+
+                    b.Navigation("PerformanceProfile")
+                        .IsRequired();
+
+                    b.Navigation("PersonalContext")
+                        .IsRequired();
+
+                    b.Navigation("SemanticSignals")
+                        .IsRequired();
+
+                    b.Navigation("WorkContext")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

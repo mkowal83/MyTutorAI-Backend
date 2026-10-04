@@ -1,6 +1,6 @@
 ﻿using MyTutorAI.Domain.Entities;
 
-namespace MyTutorAI.Application.Abstractions;
+namespace MyTutorAI.Application.Abstractions.Repositories;
 
 /// <summary>
 /// EN: Port for persisting issued refresh tokens (SQL Server); implemented in Infrastructure and registered as scoped. Tokens are stored and looked up only by hash.

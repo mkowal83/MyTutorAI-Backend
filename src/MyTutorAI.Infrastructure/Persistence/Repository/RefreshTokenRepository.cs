@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyTutorAI.Application.Abstractions;
+using MyTutorAI.Application.Abstractions.Repositories;
 using MyTutorAI.Domain.Entities;
 
 namespace MyTutorAI.Infrastructure.Persistence.Repository;

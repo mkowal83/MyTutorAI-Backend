@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyTutorAI.Domain.Entities;
+using MyTutorAI.Domain.Memory.Core;
+using MyTutorAI.Domain.Memory.Semantic;
 using MyTutorAI.Domain.Users;
 
 namespace MyTutorAI.Infrastructure.Persistence;
@@ -25,6 +27,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// PL: Wydane refresh tokeny, przechowywane wyłącznie jako hashe i powiązane z użytkownikiem.
     /// </summary>
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    /// <summary>
+    /// EN: Core memory layer, one record per user keyed by the <c>UserId</c> shadow property.
+    /// PL: Warstwa pamięci Core, jeden rekord na użytkownika kluczowany shadow property <c>UserId</c>.
+    /// </summary>
+    public DbSet<CoreMemory> CoreMemories => Set<CoreMemory>();
+
+    /// <summary>
+    /// EN: Learner profiles forming the semantic memory layer, one per user.
+    /// PL: Profile uczniów tworzące warstwę pamięci semantycznej, jeden na użytkownika.
+    /// </summary>
+    public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

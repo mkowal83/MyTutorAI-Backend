@@ -1,17 +1,23 @@
 using MyTutorAI.Application.Abstractions;
+using MyTutorAI.Application.Abstractions.Repositories;
 using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Contracts.Sessions;
+using MyTutorAI.Domain.Memory;
 using MyTutorAI.Domain.Memory.Session;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MyTutorAI.Application.Sessions;
 
 /// <summary>
-/// EN: Use case that opens a new session for the current user. The session is not persisted yet, the opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
-/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika. Sesja nie jest jeszcze utrwalana, faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
+/// EN: Use case that opens a new session for the current user and loads the user's Core memory and learner profile. The session is not persisted yet, the opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
+/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika i wczytujący jego pamięć Core oraz profil ucznia. Sesja nie jest jeszcze utrwalana, faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
 /// </summary>
 public sealed class StartSessionHandler
 {
     private readonly ICurrentUser _currentUser;
+    private readonly ICoreMemoryRepository _core;
+    private readonly IStudentProfileRepository _profiles;
+
     private readonly IClock _clock;
 
     /// <summary>
@@ -22,20 +28,32 @@ public sealed class StartSessionHandler
     /// EN: Identity of the user making the request. Must not be null.
     /// PL: Tożsamość użytkownika wykonującego żądanie. Nie może być null.
     /// </param>
+    /// <param name="core">
+    /// EN: Store of the user's Core memory. Must not be null.
+    /// PL: Magazyn pamięci Core użytkownika. Nie może być null.
+    /// </param>
+    /// <param name="profiles">
+    /// EN: Store of learner profiles. Must not be null.
+    /// PL: Magazyn profili uczniów. Nie może być null.
+    /// </param>
     /// <param name="clock">
     /// EN: Source of the session start time. Must not be null.
     /// PL: Źródło czasu rozpoczęcia sesji. Nie może być null.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// EN: <paramref name="currentUser"/> or <paramref name="clock"/> is null.
-    /// PL: <paramref name="currentUser"/> lub <paramref name="clock"/> jest null.
+    /// EN: Any argument is null.
+    /// PL: Którykolwiek argument jest null.
     /// </exception>
-    public StartSessionHandler(ICurrentUser currentUser, IClock clock)
+    public StartSessionHandler(ICurrentUser currentUser, ICoreMemoryRepository core, IStudentProfileRepository profiles, IClock clock)
     {
         ArgumentNullException.ThrowIfNull(currentUser);
+        ArgumentNullException.ThrowIfNull(core);
+        ArgumentNullException.ThrowIfNull(profiles);        
         ArgumentNullException.ThrowIfNull(clock);
 
         _currentUser = currentUser;
+        _core = core;
+        _profiles = profiles;
         _clock = clock;
     }
 
@@ -48,8 +66,8 @@ public sealed class StartSessionHandler
     /// PL: Dane otwarcia sesji. Nie może być null.
     /// </param>
     /// <param name="cancellationToken">
-    /// EN: Cancellation token; currently not observed.
-    /// PL: Token anulowania; obecnie nie jest obserwowany.
+    /// EN: Cancels loading the Core memory and the learner profile from the database.
+    /// PL: Anuluje wczytywanie pamięci Core i profilu ucznia z bazy danych.
     /// </param>
     /// <returns>
     /// EN: New session identifier, opening phase, trimmed topic, opener and UTC start time.
@@ -73,6 +91,13 @@ public sealed class StartSessionHandler
 
         var userId = _currentUser.UserId;
         var topic = request.Topic.Trim();
+
+        // 1. Rehydration of the student's four durable memory layers
+        var core = await _core.GetAsync(userId, cancellationToken);
+        var profile = await _profiles.GetAsync(userId, cancellationToken);
+
+        // 2. Assembling AgentState with memory layers
+        var state = new AgentState(core, profile);
 
         // 3. Opening phase based on the remainder of the previous session.
         var openPhase = SessionPhase.HomeworkCheck;

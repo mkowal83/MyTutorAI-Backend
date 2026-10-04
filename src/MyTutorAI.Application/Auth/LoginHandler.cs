@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using MyTutorAI.Application.Abstractions;
+using MyTutorAI.Application.Abstractions.Repositories;
 using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Contracts.Auth;
 using MyTutorAI.Application.Exceptions;

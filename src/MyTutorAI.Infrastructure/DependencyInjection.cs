@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using MyTutorAI.Application.Abstractions;
+using MyTutorAI.Application.Abstractions.Repositories;
 using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Llm;
 using MyTutorAI.Application.Options;
@@ -114,6 +115,8 @@ public static class DependencyInjection
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<ICoreMemoryRepository, CoreMemoryRepository>();
+        services.AddScoped<IStudentProfileRepository, StudentProfileRepository>();
 
         return services;
     }
