@@ -4,7 +4,7 @@ using MyTutorAI.Application.Exceptions;
 using MyTutorAI.Application.Users;
 using MyTutorAI.Domain.Users;
 
-namespace MyTutorAI.Infrastructure.Persistence;
+namespace MyTutorAI.Infrastructure.Persistence.Repository;
 
 /// <summary>
 /// EN: SQL Server (EF Core) implementation of <see cref="IUserRepository"/>. Reads are not tracked; every write is saved immediately.

@@ -1,12 +1,11 @@
 using FluentValidation;
-using MyTutorAI.Application.Contracts;
 using MyTutorAI.Domain.Users;
 
-namespace MyTutorAI.Application.Auth;
+namespace MyTutorAI.Application.Contracts.Auth;
 
 /// <summary>
-/// EN: Input validation rules for <see cref="RegisterRequest"/>; registered in DI as a singleton and run by the Api validation filter before the handler.
-/// PL: Reguły walidacji wejścia dla <see cref="RegisterRequest"/>; rejestrowane w DI jako singleton i uruchamiane przez filtr walidacji w Api przed handlerem.
+/// EN: Input validation rules for <see cref="RegisterRequest"/>; registered in DI as scoped (assembly scan) and run by the Api validation filter before the handler.
+/// PL: Reguły walidacji wejścia dla <see cref="RegisterRequest"/>; rejestrowane w DI jako scoped (skan assembly) i uruchamiane przez filtr walidacji w Api przed handlerem.
 /// </summary>
 public sealed class RegisterRequestValidator : AbstractValidator<RegisterRequest>
 {

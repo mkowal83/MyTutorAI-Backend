@@ -1,4 +1,6 @@
-namespace MyTutorAI.Application.Auth;
+using MyTutorAI.Application.Auth;
+
+namespace MyTutorAI.Application.Abstractions;
 
 /// <summary>
 /// EN: Port for one-way password hashing; the implementation lives in Infrastructure.

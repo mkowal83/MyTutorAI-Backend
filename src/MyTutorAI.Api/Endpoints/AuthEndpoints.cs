@@ -1,7 +1,7 @@
 using MyTutorAI.Api.RateLimiting;
 using MyTutorAI.Api.Validation;
 using MyTutorAI.Application.Auth;
-using MyTutorAI.Application.Contracts;
+using MyTutorAI.Application.Contracts.Auth;
 
 namespace MyTutorAI.Api.Endpoints;
 
@@ -12,8 +12,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class AuthEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>POST /api/auth/register</c>. The response is 202 without a body both for a new and an already registered e-mail, so the endpoint does not reveal which e-mails have accounts.
-    /// PL: Mapuje <c>POST /api/auth/register</c>. Odpowiedź to 202 bez body zarówno dla nowego, jak i już zarejestrowanego e-maila, więc endpoint nie zdradza, które e-maile mają konta.
+    /// EN: Maps <c>POST /api/auth/register</c> and <c>POST /api/auth/login</c>. Register returns 202 without a body both for a new and an already registered e-mail, so it does not reveal which e-mails have accounts; login returns 200 with <see cref="AuthResponse"/> or 401 with the same message for an unknown e-mail and a wrong password.
+    /// PL: Mapuje <c>POST /api/auth/register</c> i <c>POST /api/auth/login</c>. Rejestracja zwraca 202 bez body zarówno dla nowego, jak i już zarejestrowanego e-maila, więc nie zdradza, które e-maile mają konta; logowanie zwraca 200 z <see cref="AuthResponse"/> albo 401 z tym samym komunikatem dla nieznanego e-maila i błędnego hasła.
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder the endpoints are added to.
@@ -37,6 +37,16 @@ public static class AuthEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        group.MapPost("/login", LoginAsync)
+            .AddEndpointFilter<ValidationFilter<LoginRequest>>()
+            .WithName("Auth_Login")
+            .WithSummary("Logs in the account — pair of tokens (access + refresh)")
+            .WithTags("Auth")
+            .Produces<AuthResponse>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         return endpoints;
     }
 
@@ -47,4 +57,8 @@ public static class AuthEndpoints
         await handler.HandleAsync(request, cancellationToken);
         return TypedResults.Accepted((string?)null);
     }
+
+    private static Task<AuthResponse> LoginAsync(
+        LoginRequest request, LoginHandler handler, CancellationToken cancellationToken)
+        => handler.HandleAsync(request, cancellationToken);
 }

@@ -1,10 +1,9 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using MyTutorAI.Application.Auth;
-using MyTutorAI.Application.Contracts;
+using MyTutorAI.Application.Contracts.Auth;
 using MyTutorAI.Application.Demo;
 using MyTutorAI.Application.Sessions;
-using System.Globalization;
 
 namespace MyTutorAI.Application;
 
@@ -15,8 +14,8 @@ namespace MyTutorAI.Application;
 public static class DependencyInjection
 {
     /// <summary>
-    /// EN: Registers the use-case handlers (<see cref="GenerateDialogueHandler"/>, <see cref="RegisterUserHandler"/>, <see cref="StartSessionHandler"/>) as scoped and the validators as singleton <see cref="IValidator{T}"/> instances. The handlers' ports (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>, <c>IUserRepository</c>, <c>IPasswordHasher</c>, <c>IClock</c>, <c>ICurrentUser</c>) and <c>FeaturesOptions</c> must be registered separately.
-    /// PL: Rejestruje handlery przypadków użycia (<see cref="GenerateDialogueHandler"/>, <see cref="RegisterUserHandler"/>, <see cref="StartSessionHandler"/>) jako scoped, a walidatory jako singletonowe <see cref="IValidator{T}"/>. Porty handlerów (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>, <c>IUserRepository</c>, <c>IPasswordHasher</c>, <c>IClock</c>, <c>ICurrentUser</c>) i <c>FeaturesOptions</c> trzeba zarejestrować osobno.
+    /// EN: Registers the use-case handlers (<see cref="GenerateDialogueHandler"/>, <see cref="RegisterUserHandler"/>, <see cref="StartSessionHandler"/>, <see cref="LoginHandler"/>) as scoped and all <see cref="IValidator{T}"/> implementations of this assembly as scoped (assembly scan). The handlers' ports (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>, <c>IUserRepository</c>, <c>IPasswordHasher</c>, <c>IClock</c>, <c>ICurrentUser</c>, <c>IJwtTokenService</c>, <c>IRefreshTokenRepository</c>) and <c>FeaturesOptions</c>, <c>JwtOptions</c> must be registered separately.
+    /// PL: Rejestruje handlery przypadków użycia (<see cref="GenerateDialogueHandler"/>, <see cref="RegisterUserHandler"/>, <see cref="StartSessionHandler"/>, <see cref="LoginHandler"/>) jako scoped oraz wszystkie implementacje <see cref="IValidator{T}"/> z tego assembly jako scoped (skan assembly). Porty handlerów (<c>IPromptRenderer</c>, <c>IStructuredOutputClient</c>, <c>IUserRepository</c>, <c>IPasswordHasher</c>, <c>IClock</c>, <c>ICurrentUser</c>, <c>IJwtTokenService</c>, <c>IRefreshTokenRepository</c>) oraz <c>FeaturesOptions</c>, <c>JwtOptions</c> trzeba zarejestrować osobno.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
@@ -34,13 +33,14 @@ public static class DependencyInjection
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
+
         services.AddScoped<GenerateDialogueHandler>();
-        services.AddSingleton<IValidator<DialogueGenerationRequest>, DialogueGenerationRequestValidator>();
 
         services.AddScoped<RegisterUserHandler>();
-        services.AddSingleton<IValidator<RegisterRequest>, RegisterRequestValidator>();
 
         services.AddScoped<StartSessionHandler>();
+        services.AddScoped<LoginHandler>();
 
         return services;
     }

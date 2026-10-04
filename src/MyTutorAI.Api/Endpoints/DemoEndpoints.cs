@@ -14,8 +14,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class DemoEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>POST /api/demo/dialogue</c> only when <see cref="FeaturesOptions.AllowDialogue"/> is true; otherwise the route does not exist and returns a routing 404. The flag is read once from <paramref name="configuration"/> at startup.
-    /// PL: Mapuje <c>POST /api/demo/dialogue</c> tylko, gdy <see cref="FeaturesOptions.AllowDialogue"/> ma wartość true; w przeciwnym razie trasa nie istnieje i zwraca 404 routingu. Flaga jest odczytywana raz z <paramref name="configuration"/> przy starcie.
+    /// EN: Maps <c>POST /api/demo/dialogue</c> only when <see cref="FeaturesOptions.AllowDialogue"/> is true; otherwise the route does not exist and returns a routing 404. The flag is read once from <paramref name="configuration"/> at startup. The whole group requires an authenticated user (JWT Bearer).
+    /// PL: Mapuje <c>POST /api/demo/dialogue</c> tylko, gdy <see cref="FeaturesOptions.AllowDialogue"/> ma wartość true; w przeciwnym razie trasa nie istnieje i zwraca 404 routingu. Flaga jest odczytywana raz z <paramref name="configuration"/> przy starcie. Cała grupa wymaga uwierzytelnionego użytkownika (JWT Bearer).
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder the endpoints are added to.
@@ -34,8 +34,7 @@ public static class DemoEndpoints
         var features = configuration.GetSection(FeaturesOptions.SectionName).Get<FeaturesOptions>()
             ?? new FeaturesOptions();
 
-        // TODO(auth): przywrócić .RequireAuthorization() razem z AddAuthentication/UseAuthorization.
-        var group = endpoints.MapGroup("/api/demo");
+        var group = endpoints.MapGroup("/api/demo").RequireAuthorization();
 
         if (features.AllowDialogue)
         {

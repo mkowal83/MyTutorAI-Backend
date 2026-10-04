@@ -6,6 +6,7 @@
 	
 	<ItemGroup>
 	  <PackageReference Include="FluentValidation" />
+	  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 	  <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
 	  <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
 	  <!-- EN: Design-time services for the dotnet-ef tool (migrations); not shipped. PL: Usługi czasu projektowania dla narzędzia dotnet-ef (migracje); nie trafiają do wdrożenia. -->

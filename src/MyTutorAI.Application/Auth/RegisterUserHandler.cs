@@ -1,5 +1,6 @@
+using MyTutorAI.Application.Abstractions;
 using MyTutorAI.Application.Common;
-using MyTutorAI.Application.Contracts;
+using MyTutorAI.Application.Contracts.Auth;
 using MyTutorAI.Application.Exceptions;
 using MyTutorAI.Application.Users;
 using MyTutorAI.Domain.Users;

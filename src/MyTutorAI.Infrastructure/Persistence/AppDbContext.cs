@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MyTutorAI.Domain.Entities;
 using MyTutorAI.Domain.Users;
 
 namespace MyTutorAI.Infrastructure.Persistence;
@@ -18,6 +19,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// PL: Konta użytkowników.
     /// </summary>
     public DbSet<User> Users => Set<User>();
+
+    /// <summary>
+    /// EN: Issued refresh tokens, stored only as hashes and keyed by user.
+    /// PL: Wydane refresh tokeny, przechowywane wyłącznie jako hashe i powiązane z użytkownikiem.
+    /// </summary>
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

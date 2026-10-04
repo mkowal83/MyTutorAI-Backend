@@ -1,5 +1,7 @@
+using MyTutorAI.Api.Auth;
 using MyTutorAI.Api.Endpoints;
 using MyTutorAI.Api.ErrorHandling;
+using MyTutorAI.Api.OpenApi;
 using MyTutorAI.Api.RateLimiting;
 using MyTutorAI.Application;
 using MyTutorAI.Application.Options;
@@ -22,24 +24,36 @@ builder.Services.AddApplication();
 builder.Services.AddPromptRendering(useDiskTemplates: builder.Environment.IsDevelopment());
 builder.Services.AddLlmClient();
 builder.Services.AddPersistence();
-builder.Services.AddAuthServices();
+builder.Services.AddAuthServices(builder.Configuration);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddApiRateLimiting();
 
-builder.Services.AddOpenApi();
+builder.Services.AddJwtAuthentication();
+
+builder.Services.AddOpenApi(o =>
+{
+    o.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    o.AddOperationTransformer<BearerSecuritySchemeTransformer>();
+});
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwaggerUI(o => o.SwaggerEndpoint("/openapi/v1.json", "MyTutorAI API"));
+    app.UseSwaggerUI(o =>
+    {
+        o.SwaggerEndpoint("/openapi/v1.json", "MyTutorAI API");
+        o.EnablePersistAuthorization();
+    });
 }
 
 app.MapAuthEndpoints();

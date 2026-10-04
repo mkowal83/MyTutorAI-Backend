@@ -1,3 +1,5 @@
+using MyTutorAI.Application.Abstractions;
+
 namespace MyTutorAI.Application.Auth;
 
 /// <summary>

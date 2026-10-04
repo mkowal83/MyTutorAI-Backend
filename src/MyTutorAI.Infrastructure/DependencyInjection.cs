@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using MyTutorAI.Application.Abstractions;
-using MyTutorAI.Application.Auth;
 using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Llm;
 using MyTutorAI.Application.Options;
@@ -12,6 +12,7 @@ using MyTutorAI.Infrastructure.Auth;
 using MyTutorAI.Infrastructure.Common;
 using MyTutorAI.Infrastructure.Llm;
 using MyTutorAI.Infrastructure.Persistence;
+using MyTutorAI.Infrastructure.Persistence.Repository;
 using MyTutorAI.Infrastructure.Prompting;
 using MyTutorAI.Infrastructure.Security;
 
@@ -110,18 +111,24 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseSqlServer(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
+
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
     }
 
     /// <summary>
-    /// EN: Registers the authentication services: <see cref="IPasswordHasher"/> (PBKDF2) and <see cref="IClock"/> as singletons, the <c>IHttpContextAccessor</c>, and <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) as scoped.
-    /// PL: Rejestruje usługi uwierzytelniania: <see cref="IPasswordHasher"/> (PBKDF2) i <see cref="IClock"/> jako singletony, <c>IHttpContextAccessor</c> oraz <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) jako scoped.
+    /// EN: Registers the authentication services: <see cref="IPasswordHasher"/> (PBKDF2), <see cref="IClock"/> and <see cref="IJwtTokenService"/> as singletons, the <c>IHttpContextAccessor</c>, and <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) as scoped. Also binds <see cref="JwtOptions"/> with DataAnnotations validation and <c>ValidateOnStart</c>, so missing or invalid JWT configuration stops the application at startup.
+    /// PL: Rejestruje usługi uwierzytelniania: <see cref="IPasswordHasher"/> (PBKDF2), <see cref="IClock"/> i <see cref="IJwtTokenService"/> jako singletony, <c>IHttpContextAccessor</c> oraz <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) jako scoped. Wiąże też <see cref="JwtOptions"/> z walidacją DataAnnotations i <c>ValidateOnStart</c>, więc brakująca lub błędna konfiguracja JWT zatrzymuje aplikację przy starcie.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
     /// PL: Kolekcja usług do rozszerzenia. Nie może być null.
+    /// </param>
+    /// <param name="configuration">
+    /// EN: Application configuration holding the <c>Jwt</c> section.
+    /// PL: Konfiguracja aplikacji z sekcją <c>Jwt</c>.
     /// </param>
     /// <returns>
     /// EN: The same <paramref name="services"/> instance, for chaining.
@@ -131,7 +138,7 @@ public static class DependencyInjection
     /// EN: <paramref name="services"/> is null.
     /// PL: <paramref name="services"/> jest null.
     /// </exception>
-    public static IServiceCollection AddAuthServices(this IServiceCollection services)
+    public static IServiceCollection AddAuthServices(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -139,6 +146,12 @@ public static class DependencyInjection
         services.AddSingleton<IClock, SystemClock>();
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
+
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         return services;
     }

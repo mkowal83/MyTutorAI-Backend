@@ -1,8 +1,8 @@
-namespace MyTutorAI.Application.Contracts;
+namespace MyTutorAI.Application.Contracts.Auth;
 
 /// <summary>
-/// EN: Input of the account registration; body of <c>POST /api/auth/register</c>. Validated by <see cref="Auth.RegisterRequestValidator"/>.
-/// PL: Dane wejściowe rejestracji konta; body <c>POST /api/auth/register</c>. Walidowane przez <see cref="Auth.RegisterRequestValidator"/>.
+/// EN: Input of the account registration; body of <c>POST /api/auth/register</c>. Validated by <see cref="RegisterRequestValidator"/>.
+/// PL: Dane wejściowe rejestracji konta; body <c>POST /api/auth/register</c>. Walidowane przez <see cref="RegisterRequestValidator"/>.
 /// </summary>
 /// <param name="Email">
 /// EN: E-mail address; normalized (trim + lowercase) before the uniqueness check and storage.
