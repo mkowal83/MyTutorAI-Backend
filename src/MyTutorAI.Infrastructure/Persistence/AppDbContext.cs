@@ -7,8 +7,8 @@ using MyTutorAI.Domain.Users;
 namespace MyTutorAI.Infrastructure.Persistence;
 
 /// <summary>
-/// EN: EF Core context of the SQL Server store holding all data that outlives a single session. Entity mappings are applied from the <c>Configurations</c> folder of this assembly.
-/// PL: Kontekst EF Core magazynu SQL Server przechowującego wszystkie dane trwalsze niż jedna sesja. Mapowania encji są stosowane z folderu <c>Configurations</c> tego assembly.
+/// EN: EF Core context of the SQL Server store holding all data that outlives a single session. Entity mappings are applied from every <see cref="IEntityTypeConfiguration{TEntity}"/> in this assembly.
+/// PL: Kontekst EF Core magazynu SQL Server przechowującego wszystkie dane trwalsze niż jedna sesja. Mapowania encji są stosowane ze wszystkich <see cref="IEntityTypeConfiguration{TEntity}"/> w tym assembly.
 /// </summary>
 /// <param name="options">
 /// EN: Context options configured in DI (provider and connection string).
@@ -39,6 +39,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// PL: Profile uczniów tworzące warstwę pamięci semantycznej, jeden na użytkownika.
     /// </summary>
     public DbSet<StudentProfile> StudentProfiles => Set<StudentProfile>();
+
+    /// <summary>
+    /// EN: Learning progress of learners (part of the semantic memory layer), one record per user keyed by the <c>UserId</c> shadow property.
+    /// PL: Postęp nauki uczniów (część warstwy pamięci semantycznej), jeden rekord na użytkownika kluczowany shadow property <c>UserId</c>.
+    /// </summary>
+    public DbSet<LearningProgress> Progress => Set<LearningProgress>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

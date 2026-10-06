@@ -117,6 +117,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ICoreMemoryRepository, CoreMemoryRepository>();
         services.AddScoped<IStudentProfileRepository, StudentProfileRepository>();
+        services.AddScoped<IProgressRepository, ProgressRepository>();
 
         return services;
     }

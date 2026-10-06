@@ -94,6 +94,32 @@ namespace MyTutorAI.Infrastructure.Persistence.Migrations
                     b.ToTable("CoreMemories");
                 });
 
+            modelBuilder.Entity("MyTutorAI.Domain.Memory.Semantic.LearningProgress", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("HomeworkStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NextFocus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.PrimitiveCollection<string>("RecentMistakes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Progress");
+                });
+
             modelBuilder.Entity("MyTutorAI.Domain.Memory.Semantic.StudentProfile", b =>
                 {
                     b.Property<Guid>("UserId")

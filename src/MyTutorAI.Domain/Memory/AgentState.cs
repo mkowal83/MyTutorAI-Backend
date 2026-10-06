@@ -4,8 +4,8 @@ using MyTutorAI.Domain.Memory.Semantic;
 namespace MyTutorAI.Domain.Memory;
 
 /// <summary>
-/// EN: The tutor's memory state for one learner, combining the Core layer (coach identity) with the semantic layer (learner profile).
-/// PL: Stan pamięci tutora dla jednego ucznia, łączący warstwę Core (tożsamość coacha) z warstwą semantyczną (profil ucznia).
+/// EN: The tutor's memory state for one learner, combining the Core layer (coach identity) with the semantic layer (learner profile and learning progress).
+/// PL: Stan pamięci tutora dla jednego ucznia, łączący warstwę Core (tożsamość coacha) z warstwą semantyczną (profil ucznia i postęp nauki).
 /// </summary>
 public sealed class AgentState
 {
@@ -39,17 +39,23 @@ public sealed class AgentState
     /// EN: Learner profile; must not be null.
     /// PL: Profil ucznia; nie może być null.
     /// </param>
+    /// <param name="progress">
+    /// EN: Learning progress; must not be null.
+    /// PL: Postęp nauki; nie może być null.
+    /// </param>
     /// <exception cref="ArgumentNullException">
-    /// EN: <paramref name="core"/> or <paramref name="profile"/> is null.
-    /// PL: <paramref name="core"/> lub <paramref name="profile"/> jest null.
+    /// EN: <paramref name="core"/>, <paramref name="profile"/> or <paramref name="progress"/> is null.
+    /// PL: <paramref name="core"/>, <paramref name="profile"/> lub <paramref name="progress"/> jest null.
     /// </exception>
-    public AgentState(CoreMemory core, StudentProfile profile)
+    public AgentState(CoreMemory core, StudentProfile profile, LearningProgress progress)
     {
         ArgumentNullException.ThrowIfNull(core);
         ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(progress);
 
         Core = core;
         Profile = profile;
+        Progress = progress;
     }
 
     /// <summary>
@@ -64,10 +70,15 @@ public sealed class AgentState
     /// </summary>
     public StudentProfile Profile { get; }
 
+    /// <summary>
+    /// EN: Learning progress (semantic layer): recent mistakes, homework status and the focus of the next session.
+    /// PL: Postęp nauki (warstwa semantyczna): ostatnie błędy, status zadania domowego i fokus następnej sesji.
+    /// </summary>
+    public LearningProgress Progress { get; }
 
     /// <summary>
-    /// EN: Creates an empty state for a learner: the default Core memory and a new profile with no acquired context.
-    /// PL: Tworzy pusty stan dla ucznia: domyślną pamięć Core i nowy profil bez nabytego kontekstu.
+    /// EN: Creates an empty state for a learner: the default Core memory, a new profile with no acquired context and empty learning progress.
+    /// PL: Tworzy pusty stan dla ucznia: domyślną pamięć Core, nowy profil bez nabytego kontekstu i pusty postęp nauki.
     /// </summary>
     /// <param name="userId">
     /// EN: Learner identifier; must not be <see cref="Guid.Empty"/>.
@@ -90,8 +101,8 @@ public sealed class AgentState
     /// PL: Temat sesji; nie jest zapisywany w tworzonym stanie.
     /// </param>
     /// <returns>
-    /// EN: New state with <see cref="CoreMemory.Default"/> and a fresh <see cref="StudentProfile"/>.
-    /// PL: Nowy stan z <see cref="CoreMemory.Default"/> i świeżym <see cref="StudentProfile"/>.
+    /// EN: New state with <see cref="CoreMemory.Default"/>, a fresh <see cref="StudentProfile"/> and an empty <see cref="LearningProgress"/>.
+    /// PL: Nowy stan z <see cref="CoreMemory.Default"/>, świeżym <see cref="StudentProfile"/> i pustym <see cref="LearningProgress"/>.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// EN: <paramref name="userId"/> is empty, or <paramref name="name"/>, <paramref name="level"/> or <paramref name="goal"/> is null, empty or whitespace.
@@ -105,5 +116,6 @@ public sealed class AgentState
         string topic) =>
         new(
             CoreMemory.Default,
-            new StudentProfile(userId, name, level, goal));
+            new StudentProfile(userId, name, level, goal),
+            new LearningProgress());
 }
