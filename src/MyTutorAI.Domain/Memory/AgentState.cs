@@ -1,11 +1,12 @@
 ﻿using MyTutorAI.Domain.Memory.Core;
+using MyTutorAI.Domain.Memory.Episodic;
 using MyTutorAI.Domain.Memory.Semantic;
 
 namespace MyTutorAI.Domain.Memory;
 
 /// <summary>
-/// EN: The tutor's memory state for one learner, combining the Core layer (coach identity) with the semantic layer (learner profile and learning progress).
-/// PL: Stan pamięci tutora dla jednego ucznia, łączący warstwę Core (tożsamość coacha) z warstwą semantyczną (profil ucznia i postęp nauki).
+/// EN: The tutor's memory state for one learner, combining the Core layer (coach identity), the semantic layer (learner profile and learning progress) and the episodic layer (completed sessions).
+/// PL: Stan pamięci tutora dla jednego ucznia, łączący warstwę Core (tożsamość coacha), warstwę semantyczną (profil ucznia i postęp nauki) oraz warstwę epizodyczną (zakończone sesje).
 /// </summary>
 public sealed class AgentState
 {
@@ -43,19 +44,25 @@ public sealed class AgentState
     /// EN: Learning progress; must not be null.
     /// PL: Postęp nauki; nie może być null.
     /// </param>
+    /// <param name="episodic">
+    /// EN: Episodic memory; must not be null.
+    /// PL: Pamięć epizodyczna; nie może być null.
+    /// </param>
     /// <exception cref="ArgumentNullException">
-    /// EN: <paramref name="core"/>, <paramref name="profile"/> or <paramref name="progress"/> is null.
-    /// PL: <paramref name="core"/>, <paramref name="profile"/> lub <paramref name="progress"/> jest null.
+    /// EN: <paramref name="core"/>, <paramref name="profile"/>, <paramref name="progress"/> or <paramref name="episodic"/> is null.
+    /// PL: <paramref name="core"/>, <paramref name="profile"/>, <paramref name="progress"/> lub <paramref name="episodic"/> jest null.
     /// </exception>
-    public AgentState(CoreMemory core, StudentProfile profile, LearningProgress progress)
+    public AgentState(CoreMemory core, StudentProfile profile, LearningProgress progress, EpisodicMemory episodic)
     {
         ArgumentNullException.ThrowIfNull(core);
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(progress);
+        ArgumentNullException.ThrowIfNull(episodic);
 
         Core = core;
         Profile = profile;
         Progress = progress;
+        Episodic = episodic;
     }
 
     /// <summary>
@@ -77,8 +84,14 @@ public sealed class AgentState
     public LearningProgress Progress { get; }
 
     /// <summary>
-    /// EN: Creates an empty state for a learner: the default Core memory, a new profile with no acquired context and empty learning progress.
-    /// PL: Tworzy pusty stan dla ucznia: domyślną pamięć Core, nowy profil bez nabytego kontekstu i pusty postęp nauki.
+    /// EN: Episodic memory layer: compressed records of completed sessions.
+    /// PL: Warstwa pamięci epizodycznej: skompresowane zapisy zakończonych sesji.
+    /// </summary>
+    public EpisodicMemory Episodic { get; }
+
+    /// <summary>
+    /// EN: Creates an empty state for a learner: the default Core memory, a new profile with no acquired context, empty learning progress and empty episodic memory.
+    /// PL: Tworzy pusty stan dla ucznia: domyślną pamięć Core, nowy profil bez nabytego kontekstu, pusty postęp nauki i pustą pamięć epizodyczną.
     /// </summary>
     /// <param name="userId">
     /// EN: Learner identifier; must not be <see cref="Guid.Empty"/>.
@@ -101,8 +114,8 @@ public sealed class AgentState
     /// PL: Temat sesji; nie jest zapisywany w tworzonym stanie.
     /// </param>
     /// <returns>
-    /// EN: New state with <see cref="CoreMemory.Default"/>, a fresh <see cref="StudentProfile"/> and an empty <see cref="LearningProgress"/>.
-    /// PL: Nowy stan z <see cref="CoreMemory.Default"/>, świeżym <see cref="StudentProfile"/> i pustym <see cref="LearningProgress"/>.
+    /// EN: New state with <see cref="CoreMemory.Default"/>, a fresh <see cref="StudentProfile"/>, an empty <see cref="LearningProgress"/> and an empty <see cref="EpisodicMemory"/>.
+    /// PL: Nowy stan z <see cref="CoreMemory.Default"/>, świeżym <see cref="StudentProfile"/>, pustym <see cref="LearningProgress"/> i pustą <see cref="EpisodicMemory"/>.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// EN: <paramref name="userId"/> is empty, or <paramref name="name"/>, <paramref name="level"/> or <paramref name="goal"/> is null, empty or whitespace.
@@ -117,5 +130,6 @@ public sealed class AgentState
         new(
             CoreMemory.Default,
             new StudentProfile(userId, name, level, goal),
-            new LearningProgress());
+            new LearningProgress(),
+            new EpisodicMemory());
 }

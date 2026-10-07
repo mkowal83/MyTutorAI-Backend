@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyTutorAI.Domain.Entities;
 using MyTutorAI.Domain.Memory.Core;
+using MyTutorAI.Domain.Memory.Episodic;
 using MyTutorAI.Domain.Memory.Semantic;
 using MyTutorAI.Domain.Users;
 
@@ -45,6 +46,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// PL: Postęp nauki uczniów (część warstwy pamięci semantycznej), jeden rekord na użytkownika kluczowany shadow property <c>UserId</c>.
     /// </summary>
     public DbSet<LearningProgress> Progress => Set<LearningProgress>();
+
+    /// <summary>
+    /// EN: Episodic memory layer of learners, one record per user keyed by the <c>UserId</c> shadow property.
+    /// PL: Warstwa pamięci epizodycznej uczniów, jeden rekord na użytkownika kluczowany shadow property <c>UserId</c>.
+    /// </summary>
+    public DbSet<EpisodicMemory> Episodes => Set<EpisodicMemory>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

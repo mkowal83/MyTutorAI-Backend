@@ -9,8 +9,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace MyTutorAI.Application.Sessions;
 
 /// <summary>
-/// EN: Use case that opens a new session for the current user and loads the user's Core memory, learner profile and learning progress. The session is not persisted yet, the opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
-/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika i wczytujący jego pamięć Core, profil ucznia oraz postęp nauki. Sesja nie jest jeszcze utrwalana, faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
+/// EN: Use case that opens a new session for the current user and loads the user's Core memory, learner profile, learning progress and episodic memory. The session is not persisted yet, the opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
+/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika i wczytujący jego pamięć Core, profil ucznia, postęp nauki oraz pamięć epizodyczną. Sesja nie jest jeszcze utrwalana, faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
 /// </summary>
 public sealed class StartSessionHandler
 {
@@ -18,6 +18,7 @@ public sealed class StartSessionHandler
     private readonly ICoreMemoryRepository _core;
     private readonly IStudentProfileRepository _profiles;
     private readonly IProgressRepository _progress;
+    private readonly IEpisodicMemoryRepository _episodic;
     private readonly IClock _clock;
 
     /// <summary>
@@ -40,6 +41,10 @@ public sealed class StartSessionHandler
     /// EN: Store of learners' learning progress. Must not be null.
     /// PL: Magazyn postępu nauki uczniów. Nie może być null.
     /// </param>
+    /// <param name="episodic">
+    /// EN: Store of learners' episodic memory. Must not be null.
+    /// PL: Magazyn pamięci epizodycznej uczniów. Nie może być null.
+    /// </param>
     /// <param name="clock">
     /// EN: Source of the session start time. Must not be null.
     /// PL: Źródło czasu rozpoczęcia sesji. Nie może być null.
@@ -52,18 +57,21 @@ public sealed class StartSessionHandler
                                ICoreMemoryRepository core, 
                                IStudentProfileRepository profiles,
                                IProgressRepository progress,
+                               IEpisodicMemoryRepository episodic,
                                IClock clock)
     {
         ArgumentNullException.ThrowIfNull(currentUser);
         ArgumentNullException.ThrowIfNull(core);
         ArgumentNullException.ThrowIfNull(profiles);
         ArgumentNullException.ThrowIfNull(progress);
+        ArgumentNullException.ThrowIfNull(episodic);
         ArgumentNullException.ThrowIfNull(clock);
 
         _currentUser = currentUser;
         _core = core;
         _profiles = profiles;
         _progress = progress;
+        _episodic = episodic;
         _clock = clock;
     }
 
@@ -76,8 +84,8 @@ public sealed class StartSessionHandler
     /// PL: Dane otwarcia sesji. Nie może być null.
     /// </param>
     /// <param name="cancellationToken">
-    /// EN: Cancels loading the Core memory, the learner profile and the learning progress from the database.
-    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia i postępu nauki z bazy danych.
+    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory from the database.
+    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej z bazy danych.
     /// </param>
     /// <returns>
     /// EN: New session identifier, opening phase, trimmed topic, opener and UTC start time.
@@ -106,9 +114,10 @@ public sealed class StartSessionHandler
         var core = await _core.GetAsync(userId, cancellationToken);
         var profile = await _profiles.GetAsync(userId, cancellationToken);
         var progress = await _progress.GetAsync(userId, cancellationToken);
+        var episodic = await _episodic.GetAsync(userId, cancellationToken);
 
         // 2. Assembling AgentState with memory layers
-        var state = new AgentState(core, profile, progress);
+        var state = new AgentState(core, profile, progress, episodic);
 
         // 3. Opening phase based on the remainder of the previous session.
         var openPhase = SessionPhase.HomeworkCheck;

@@ -94,6 +94,25 @@ namespace MyTutorAI.Infrastructure.Persistence.Migrations
                     b.ToTable("CoreMemories");
                 });
 
+            modelBuilder.Entity("MyTutorAI.Domain.Memory.Episodic.EpisodicMemory", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("MaxEpisodes")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Episodes");
+                });
+
             modelBuilder.Entity("MyTutorAI.Domain.Memory.Semantic.LearningProgress", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -191,6 +210,42 @@ namespace MyTutorAI.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("MyTutorAI.Domain.Memory.Episodic.EpisodicMemory", b =>
+                {
+                    b.OwnsMany("MyTutorAI.Domain.Memory.Episodic.Episode", "Episodes", b1 =>
+                        {
+                            b1.Property<Guid>("EpisodicMemoryUserId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<string>("Mistakes")
+                                .IsRequired();
+
+                            b1.Property<string>("NextStep")
+                                .IsRequired();
+
+                            b1.PrimitiveCollection<string>("PersonalFacts")
+                                .IsRequired();
+
+                            b1.Property<string>("Summary")
+                                .IsRequired();
+
+                            b1.HasKey("EpisodicMemoryUserId", "__synthesizedOrdinal");
+
+                            b1.ToTable("Episodes");
+
+                            b1
+                                .ToJson("Episodes")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EpisodicMemoryUserId");
+                        });
+
+                    b.Navigation("Episodes");
                 });
 
             modelBuilder.Entity("MyTutorAI.Domain.Memory.Semantic.StudentProfile", b =>
