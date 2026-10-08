@@ -4,6 +4,7 @@ using MyTutorAI.Application.Common;
 using MyTutorAI.Application.Contracts.Sessions;
 using MyTutorAI.Domain.Memory;
 using MyTutorAI.Domain.Memory.Session;
+using MyTutorAI.Domain.Memory.Workflow;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MyTutorAI.Application.Sessions;
@@ -125,7 +126,7 @@ public sealed class StartSessionHandler
         var episodic = await _episodic.GetAsync(userId, cancellationToken);
 
         // 2. Assembling AgentState with memory layers
-        var state = new AgentState(core, profile, progress, episodic);
+        var state = new AgentState(core, profile, progress, new WorkflowMemory(topic), episodic);
 
         // 3. Opening phase based on the remainder of the previous session.
         var openPhase = SessionPhase.HomeworkCheck;
