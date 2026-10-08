@@ -9,8 +9,8 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace MyTutorAI.Application.Sessions;
 
 /// <summary>
-/// EN: Use case that opens a new session for the current user and loads the user's Core memory, learner profile, learning progress and episodic memory. The session is not persisted yet, the opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
-/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika i wczytujący jego pamięć Core, profil ucznia, postęp nauki oraz pamięć epizodyczną. Sesja nie jest jeszcze utrwalana, faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
+/// EN: Use case that opens a new session for the current user, loads the user's Core memory, learner profile, learning progress and episodic memory, and stores the session through <see cref="ISessionRepository"/>. The opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
+/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika, wczytujący jego pamięć Core, profil ucznia, postęp nauki oraz pamięć epizodyczną i zapisujący sesję przez <see cref="ISessionRepository"/>. Faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
 /// </summary>
 public sealed class StartSessionHandler
 {
@@ -19,6 +19,7 @@ public sealed class StartSessionHandler
     private readonly IStudentProfileRepository _profiles;
     private readonly IProgressRepository _progress;
     private readonly IEpisodicMemoryRepository _episodic;
+    private readonly ISessionRepository _sessions;
     private readonly IClock _clock;
 
     /// <summary>
@@ -45,6 +46,10 @@ public sealed class StartSessionHandler
     /// EN: Store of learners' episodic memory. Must not be null.
     /// PL: Magazyn pamięci epizodycznej uczniów. Nie może być null.
     /// </param>
+    /// <param name="sessions">
+    /// EN: Store in which the new session is saved. Must not be null.
+    /// PL: Magazyn, w którym zapisywana jest nowa sesja. Nie może być null.
+    /// </param>
     /// <param name="clock">
     /// EN: Source of the session start time. Must not be null.
     /// PL: Źródło czasu rozpoczęcia sesji. Nie może być null.
@@ -58,6 +63,7 @@ public sealed class StartSessionHandler
                                IStudentProfileRepository profiles,
                                IProgressRepository progress,
                                IEpisodicMemoryRepository episodic,
+                               ISessionRepository sessions,
                                IClock clock)
     {
         ArgumentNullException.ThrowIfNull(currentUser);
@@ -65,6 +71,7 @@ public sealed class StartSessionHandler
         ArgumentNullException.ThrowIfNull(profiles);
         ArgumentNullException.ThrowIfNull(progress);
         ArgumentNullException.ThrowIfNull(episodic);
+        ArgumentNullException.ThrowIfNull(sessions);
         ArgumentNullException.ThrowIfNull(clock);
 
         _currentUser = currentUser;
@@ -72,6 +79,7 @@ public sealed class StartSessionHandler
         _profiles = profiles;
         _progress = progress;
         _episodic = episodic;
+        _sessions = sessions;
         _clock = clock;
     }
 
@@ -84,11 +92,11 @@ public sealed class StartSessionHandler
     /// PL: Dane otwarcia sesji. Nie może być null.
     /// </param>
     /// <param name="cancellationToken">
-    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory from the database.
-    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej z bazy danych.
+    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory, and saving the session in the database.
+    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej oraz zapis sesji w bazie danych.
     /// </param>
     /// <returns>
-    /// EN: New session identifier, opening phase, trimmed topic, opener and UTC start time.
+    /// EN: Stored session identifier, opening phase, trimmed topic, opener and UTC start time.
     /// PL: Identyfikator nowej sesji, faza otwarcia, przycięty temat, powitanie i czas rozpoczęcia w UTC.
     /// </returns>
     /// <exception cref="ArgumentNullException">
@@ -125,6 +133,7 @@ public sealed class StartSessionHandler
         // 5. Creation and persistence of the session record.
         var now = _clock.UtcNow;
         var session = new Session(Guid.NewGuid(), userId, topic, openPhase, now);
+        await _sessions.AddAsync(session, cancellationToken);
 
         // 7. Opening text -> Assistant turn (locally for graph consistency + authoritatively in the store).
         var opener = "Welcome to your new session!";

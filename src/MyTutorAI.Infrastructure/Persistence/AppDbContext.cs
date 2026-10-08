@@ -3,6 +3,7 @@ using MyTutorAI.Domain.Entities;
 using MyTutorAI.Domain.Memory.Core;
 using MyTutorAI.Domain.Memory.Episodic;
 using MyTutorAI.Domain.Memory.Semantic;
+using MyTutorAI.Domain.Memory.Session;
 using MyTutorAI.Domain.Users;
 
 namespace MyTutorAI.Infrastructure.Persistence;
@@ -52,6 +53,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// PL: Warstwa pamięci epizodycznej uczniów, jeden rekord na użytkownika kluczowany shadow property <c>UserId</c>.
     /// </summary>
     public DbSet<EpisodicMemory> Episodes => Set<EpisodicMemory>();
+
+    /// <summary>
+    /// EN: Learning sessions with their current phase and status, many per user, keyed by <see cref="Session.Id"/>.
+    /// PL: Sesje nauki z bieżącą fazą i statusem, wiele na użytkownika, kluczowane po <see cref="Session.Id"/>.
+    /// </summary>
+    public DbSet<Session> Sessions => Set<Session>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

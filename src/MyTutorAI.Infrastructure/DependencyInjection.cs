@@ -119,6 +119,7 @@ public static class DependencyInjection
         services.AddScoped<IStudentProfileRepository, StudentProfileRepository>();
         services.AddScoped<IProgressRepository, ProgressRepository>();
         services.AddScoped<IEpisodicMemoryRepository, EpisodicMemoryRepository>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
 
         return services;
     }
