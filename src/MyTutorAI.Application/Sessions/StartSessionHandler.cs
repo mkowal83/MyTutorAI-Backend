@@ -10,12 +10,12 @@ using MyTutorAI.Domain.Memory.Working;
 namespace MyTutorAI.Application.Sessions;
 
 /// <summary>
-/// EN: Use case that opens a new session for the current user, loads the user's Core memory, learner profile, learning progress and episodic memory, writes the opener as an Assistant turn to the Working memory through <see cref="IWorkingMemoryStore"/>, and then stores the session through <see cref="ISessionRepository"/>. The opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
-/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika, wczytujący jego pamięć Core, profil ucznia, postęp nauki oraz pamięć epizodyczną, zapisujący powitanie jako turę Assistant do pamięci Working przez <see cref="IWorkingMemoryStore"/>, a następnie zapisujący sesję przez <see cref="ISessionRepository"/>. Faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
+/// EN: Use case that opens a new session for the current user from the user's Core memory, learner profile, learning progress and episodic memory. The opening phase comes from <see cref="PhasePolicy.DetermineOpenPhase"/> and the opener from <see cref="SessionOpener.BuildOpener"/>; the session is stored through <see cref="ISessionRepository"/>, and the opener is written as the first Assistant turn to the Working memory through <see cref="IWorkingMemoryStore"/>.
+/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika na podstawie jego pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej. Faza otwarcia pochodzi z <see cref="PhasePolicy.DetermineOpenPhase"/>, a powitanie z <see cref="SessionOpener.BuildOpener"/>; sesja jest zapisywana przez <see cref="ISessionRepository"/>, a powitanie trafia jako pierwsza tura Assistant do pamięci Working przez <see cref="IWorkingMemoryStore"/>.
 /// </summary>
 /// <remarks>
-/// EN: The Working memory is written before SQL Server: when Redis fails, nothing is persisted; when SQL Server fails, the orphaned Redis entry expires through its TTL.
-/// PL: Pamięć Working jest zapisywana przed SQL Server: gdy zawiedzie Redis, nic nie zostaje trwale zapisane; gdy zawiedzie SQL Server, osierocony wpis w Redis wygasa przez TTL.
+/// EN: The session is saved in SQL Server before the Working memory is cleared and written; when Redis fails, the session stays saved in SQL Server without the opener turn in the Working memory.
+/// PL: Sesja jest zapisywana w SQL Server przed wyczyszczeniem i zapisem pamięci Working; gdy zawiedzie Redis, sesja pozostaje zapisana w SQL Server bez tury powitania w pamięci Working.
 /// </remarks>
 public sealed class StartSessionHandler
 {
@@ -105,8 +105,8 @@ public sealed class StartSessionHandler
     /// PL: Dane otwarcia sesji. Nie może być null.
     /// </param>
     /// <param name="cancellationToken">
-    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory, writing the opener to the Working memory, and saving the session in the database.
-    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej, zapis powitania do pamięci Working oraz zapis sesji w bazie danych.
+    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory, saving the session in the database, and clearing and writing the Working memory.
+    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej, zapis sesji w bazie danych oraz wyczyszczenie i zapis pamięci Working.
     /// </param>
     /// <returns>
     /// EN: Stored session identifier, opening phase, trimmed topic, opener and UTC start time.
@@ -141,20 +141,24 @@ public sealed class StartSessionHandler
         var state = new AgentState(core, profile, progress, new WorkflowMemory(topic), new WorkingMemory(), episodic);
 
         // 3. Opening phase based on the remainder of the previous session.
-        var openPhase = SessionPhase.HomeworkCheck;
+        var openPhase = PhasePolicy.DetermineOpenPhase(state);
 
-        // 4. Creation of the session record.
+        // 4. Retarget Workflow na właściwy temat + fazę (odpowiednik start_session).
+        state.Workflow.Retarget(topic, openPhase);
+
+        // 5. Creation of the session record.
         var now = _clock.UtcNow;
         var session = new Session(Guid.NewGuid(), userId, topic, openPhase, now);
+        await _sessions.AddAsync(session, cancellationToken);
 
-        // 5. Opening text -> Assistant turn (locally for graph consistency + authoritatively in the store).
-        // Redis is written before SQL: if Redis fails nothing is persisted; if SQL fails the Redis key expires by TTL.
-        var opener = "Welcome to your new session!";
+        // 6. Reset the working memory for the (userId, sessionId)
+        await _workingMemory.ClearAsync(userId, session.Id, cancellationToken);
+
+        // 7. Opening text -> Assistant turn (locally for graph consistency + authoritatively in the store).
+        var opener = SessionOpener.BuildOpener(state);
         state.Working.Append(ChatRole.Assistant, opener);
         await _workingMemory.AppendAsync(userId, session.Id, ChatRole.Assistant, opener, cancellationToken);
 
-        // 6. Persistence of the session record.
-        await _sessions.AddAsync(session, cancellationToken);
 
         return new StartSessionResponse(session.Id, openPhase, topic, opener, now);
     }
