@@ -3,12 +3,13 @@ using MyTutorAI.Domain.Memory.Episodic;
 using MyTutorAI.Domain.Memory.Semantic;
 using MyTutorAI.Domain.Memory.Session;
 using MyTutorAI.Domain.Memory.Workflow;
+using MyTutorAI.Domain.Memory.Working;
 
 namespace MyTutorAI.Domain.Memory;
 
 /// <summary>
-/// EN: The tutor's memory state for one learner, combining the Core layer (coach identity), the semantic layer (learner profile and learning progress), the workflow layer (phase and topic of the current session) and the episodic layer (completed sessions).
-/// PL: Stan pamięci tutora dla jednego ucznia, łączący warstwę Core (tożsamość coacha), warstwę semantyczną (profil ucznia i postęp nauki), warstwę Workflow (faza i temat bieżącej sesji) oraz warstwę epizodyczną (zakończone sesje).
+/// EN: The tutor's memory state for one learner, combining the Core layer (coach identity), the semantic layer (learner profile and learning progress), the workflow layer (phase and topic of the current session), the Working layer (turn history of the current session) and the episodic layer (completed sessions).
+/// PL: Stan pamięci tutora dla jednego ucznia, łączący warstwę Core (tożsamość coacha), warstwę semantyczną (profil ucznia i postęp nauki), warstwę Workflow (faza i temat bieżącej sesji), warstwę Working (historia tur bieżącej sesji) oraz warstwę epizodyczną (zakończone sesje).
 /// </summary>
 public sealed class AgentState
 {
@@ -50,26 +51,33 @@ public sealed class AgentState
     /// EN: Workflow memory with the current session's phase and topic; must not be null.
     /// PL: Pamięć Workflow z fazą i tematem bieżącej sesji; nie może być null.
     /// </param>
+    /// <param name="working">
+    /// EN: Working memory with the turn history of the current session; must not be null.
+    /// PL: Pamięć Working z historią tur bieżącej sesji; nie może być null.
+    /// </param>
     /// <param name="episodic">
     /// EN: Episodic memory; must not be null.
     /// PL: Pamięć epizodyczna; nie może być null.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// EN: <paramref name="core"/>, <paramref name="profile"/>, <paramref name="progress"/>, <paramref name="workflowMemory"/> or <paramref name="episodic"/> is null.
-    /// PL: <paramref name="core"/>, <paramref name="profile"/>, <paramref name="progress"/>, <paramref name="workflowMemory"/> lub <paramref name="episodic"/> jest null.
+    /// EN: <paramref name="core"/>, <paramref name="profile"/>, <paramref name="progress"/>, <paramref name="workflowMemory"/>, <paramref name="working"/> or <paramref name="episodic"/> is null.
+    /// PL: <paramref name="core"/>, <paramref name="profile"/>, <paramref name="progress"/>, <paramref name="workflowMemory"/>, <paramref name="working"/> lub <paramref name="episodic"/> jest null.
     /// </exception>
-    public AgentState(CoreMemory core, StudentProfile profile, LearningProgress progress, WorkflowMemory workflowMemory, EpisodicMemory episodic)
+    public AgentState(CoreMemory core, StudentProfile profile, LearningProgress progress,
+                      WorkflowMemory workflowMemory, WorkingMemory working, EpisodicMemory episodic)
     {
         ArgumentNullException.ThrowIfNull(core);
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(progress);
         ArgumentNullException.ThrowIfNull(workflowMemory);
+        ArgumentNullException.ThrowIfNull(working);
         ArgumentNullException.ThrowIfNull(episodic);
 
         Core = core;
         Profile = profile;
         Progress = progress;
         Workflow = workflowMemory;
+        Working = working;
         Episodic = episodic;
     }
 
@@ -98,6 +106,12 @@ public sealed class AgentState
     public WorkflowMemory Workflow { get; }
 
     /// <summary>
+    /// EN: Working memory layer: full turn history of the current session.
+    /// PL: Warstwa pamięci Working: pełna historia tur bieżącej sesji.
+    /// </summary>
+    public WorkingMemory Working { get; }
+
+    /// <summary>
     /// EN: Episodic memory layer: compressed records of completed sessions.
     /// PL: Warstwa pamięci epizodycznej: skompresowane zapisy zakończonych sesji.
     /// </summary>
@@ -105,8 +119,8 @@ public sealed class AgentState
 
 
     /// <summary>
-    /// EN: Creates an empty state for a learner: the default Core memory, a new profile with no acquired context, empty learning progress, workflow memory for the given topic in the <see cref="SessionPhase.Practice"/> phase and empty episodic memory.
-    /// PL: Tworzy pusty stan dla ucznia: domyślną pamięć Core, nowy profil bez nabytego kontekstu, pusty postęp nauki, pamięć Workflow dla podanego tematu w fazie <see cref="SessionPhase.Practice"/> i pustą pamięć epizodyczną.
+    /// EN: Creates an empty state for a learner: the default Core memory, a new profile with no acquired context, empty learning progress, workflow memory for the given topic in the <see cref="SessionPhase.Practice"/> phase, empty working memory and empty episodic memory.
+    /// PL: Tworzy pusty stan dla ucznia: domyślną pamięć Core, nowy profil bez nabytego kontekstu, pusty postęp nauki, pamięć Workflow dla podanego tematu w fazie <see cref="SessionPhase.Practice"/>, pustą pamięć Working i pustą pamięć epizodyczną.
     /// </summary>
     /// <param name="userId">
     /// EN: Learner identifier; must not be <see cref="Guid.Empty"/>.
@@ -129,8 +143,8 @@ public sealed class AgentState
     /// PL: Temat sesji zapisywany po przycięciu w <see cref="Workflow"/>; nie może być null, pusty ani składać się z samych białych znaków.
     /// </param>
     /// <returns>
-    /// EN: New state with <see cref="CoreMemory.Default"/>, a fresh <see cref="StudentProfile"/>, an empty <see cref="LearningProgress"/>, a <see cref="WorkflowMemory"/> in the <see cref="SessionPhase.Practice"/> phase and an empty <see cref="EpisodicMemory"/>.
-    /// PL: Nowy stan z <see cref="CoreMemory.Default"/>, świeżym <see cref="StudentProfile"/>, pustym <see cref="LearningProgress"/>, <see cref="WorkflowMemory"/> w fazie <see cref="SessionPhase.Practice"/> i pustą <see cref="EpisodicMemory"/>.
+    /// EN: New state with <see cref="CoreMemory.Default"/>, a fresh <see cref="StudentProfile"/>, an empty <see cref="LearningProgress"/>, a <see cref="WorkflowMemory"/> in the <see cref="SessionPhase.Practice"/> phase, an empty <see cref="WorkingMemory"/> and an empty <see cref="EpisodicMemory"/>.
+    /// PL: Nowy stan z <see cref="CoreMemory.Default"/>, świeżym <see cref="StudentProfile"/>, pustym <see cref="LearningProgress"/>, <see cref="WorkflowMemory"/> w fazie <see cref="SessionPhase.Practice"/>, pustą <see cref="WorkingMemory"/> i pustą <see cref="EpisodicMemory"/>.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// EN: <paramref name="userId"/> is empty, or <paramref name="name"/>, <paramref name="level"/>, <paramref name="goal"/> or <paramref name="topic"/> is null, empty or whitespace.
@@ -147,6 +161,7 @@ public sealed class AgentState
             new StudentProfile(userId, name, level, goal),
             new LearningProgress(),
             new WorkflowMemory(topic, SessionPhase.Practice),
+            new WorkingMemory(),
             new EpisodicMemory()
             );
 }

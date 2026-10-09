@@ -15,8 +15,8 @@ public sealed class DatabaseOptions
     public const string SectionName = "Persistence:SqlServer";
 
     /// <summary>
-    /// EN: SQL Server connection string; required and a secret (user-secrets or the <c>Persistence__SqlServer__ConnectionString</c> environment variable), never stored in the repository.
-    /// PL: Connection string SQL Server; wymagany i będący sekretem (user-secrets lub zmienna środowiskowa <c>Persistence__SqlServer__ConnectionString</c>), nigdy nie przechowywany w repozytorium.
+    /// EN: SQL Server connection string; required.
+    /// PL: Connection string SQL Server; wymagany.
     /// </summary>
     [Required]
     public string ConnectionString { get; set; } = string.Empty;

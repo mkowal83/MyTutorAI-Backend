@@ -5,14 +5,18 @@ using MyTutorAI.Application.Contracts.Sessions;
 using MyTutorAI.Domain.Memory;
 using MyTutorAI.Domain.Memory.Session;
 using MyTutorAI.Domain.Memory.Workflow;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using MyTutorAI.Domain.Memory.Working;
 
 namespace MyTutorAI.Application.Sessions;
 
 /// <summary>
-/// EN: Use case that opens a new session for the current user, loads the user's Core memory, learner profile, learning progress and episodic memory, and stores the session through <see cref="ISessionRepository"/>. The opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
-/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika, wczytujący jego pamięć Core, profil ucznia, postęp nauki oraz pamięć epizodyczną i zapisujący sesję przez <see cref="ISessionRepository"/>. Faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
+/// EN: Use case that opens a new session for the current user, loads the user's Core memory, learner profile, learning progress and episodic memory, writes the opener as an Assistant turn to the Working memory through <see cref="IWorkingMemoryStore"/>, and then stores the session through <see cref="ISessionRepository"/>. The opening phase is always <see cref="SessionPhase.HomeworkCheck"/> and the opener is a fixed greeting.
+/// PL: Przypadek użycia otwierający nową sesję bieżącego użytkownika, wczytujący jego pamięć Core, profil ucznia, postęp nauki oraz pamięć epizodyczną, zapisujący powitanie jako turę Assistant do pamięci Working przez <see cref="IWorkingMemoryStore"/>, a następnie zapisujący sesję przez <see cref="ISessionRepository"/>. Faza otwarcia to zawsze <see cref="SessionPhase.HomeworkCheck"/>, a powitanie jest stałym tekstem.
 /// </summary>
+/// <remarks>
+/// EN: The Working memory is written before SQL Server: when Redis fails, nothing is persisted; when SQL Server fails, the orphaned Redis entry expires through its TTL.
+/// PL: Pamięć Working jest zapisywana przed SQL Server: gdy zawiedzie Redis, nic nie zostaje trwale zapisane; gdy zawiedzie SQL Server, osierocony wpis w Redis wygasa przez TTL.
+/// </remarks>
 public sealed class StartSessionHandler
 {
     private readonly ICurrentUser _currentUser;
@@ -21,6 +25,7 @@ public sealed class StartSessionHandler
     private readonly IProgressRepository _progress;
     private readonly IEpisodicMemoryRepository _episodic;
     private readonly ISessionRepository _sessions;
+    private readonly IWorkingMemoryStore _workingMemory;
     private readonly IClock _clock;
 
     /// <summary>
@@ -51,6 +56,10 @@ public sealed class StartSessionHandler
     /// EN: Store in which the new session is saved. Must not be null.
     /// PL: Magazyn, w którym zapisywana jest nowa sesja. Nie może być null.
     /// </param>
+    /// <param name="workingMemory">
+    /// EN: Store of the session's Working memory (Redis), which receives the opener turn. Must not be null.
+    /// PL: Magazyn pamięci Working sesji (Redis), do którego trafia tura powitania. Nie może być null.
+    /// </param>
     /// <param name="clock">
     /// EN: Source of the session start time. Must not be null.
     /// PL: Źródło czasu rozpoczęcia sesji. Nie może być null.
@@ -65,6 +74,7 @@ public sealed class StartSessionHandler
                                IProgressRepository progress,
                                IEpisodicMemoryRepository episodic,
                                ISessionRepository sessions,
+                               IWorkingMemoryStore workingMemory,   
                                IClock clock)
     {
         ArgumentNullException.ThrowIfNull(currentUser);
@@ -73,6 +83,7 @@ public sealed class StartSessionHandler
         ArgumentNullException.ThrowIfNull(progress);
         ArgumentNullException.ThrowIfNull(episodic);
         ArgumentNullException.ThrowIfNull(sessions);
+        ArgumentNullException.ThrowIfNull(workingMemory);
         ArgumentNullException.ThrowIfNull(clock);
 
         _currentUser = currentUser;
@@ -81,6 +92,7 @@ public sealed class StartSessionHandler
         _progress = progress;
         _episodic = episodic;
         _sessions = sessions;
+        _workingMemory = workingMemory;
         _clock = clock;
     }
 
@@ -93,8 +105,8 @@ public sealed class StartSessionHandler
     /// PL: Dane otwarcia sesji. Nie może być null.
     /// </param>
     /// <param name="cancellationToken">
-    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory, and saving the session in the database.
-    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej oraz zapis sesji w bazie danych.
+    /// EN: Cancels loading the Core memory, the learner profile, the learning progress and the episodic memory, writing the opener to the Working memory, and saving the session in the database.
+    /// PL: Anuluje wczytywanie pamięci Core, profilu ucznia, postępu nauki i pamięci epizodycznej, zapis powitania do pamięci Working oraz zapis sesji w bazie danych.
     /// </param>
     /// <returns>
     /// EN: Stored session identifier, opening phase, trimmed topic, opener and UTC start time.
@@ -126,18 +138,23 @@ public sealed class StartSessionHandler
         var episodic = await _episodic.GetAsync(userId, cancellationToken);
 
         // 2. Assembling AgentState with memory layers
-        var state = new AgentState(core, profile, progress, new WorkflowMemory(topic), episodic);
+        var state = new AgentState(core, profile, progress, new WorkflowMemory(topic), new WorkingMemory(), episodic);
 
         // 3. Opening phase based on the remainder of the previous session.
         var openPhase = SessionPhase.HomeworkCheck;
 
-        // 5. Creation and persistence of the session record.
+        // 4. Creation of the session record.
         var now = _clock.UtcNow;
         var session = new Session(Guid.NewGuid(), userId, topic, openPhase, now);
-        await _sessions.AddAsync(session, cancellationToken);
 
-        // 7. Opening text -> Assistant turn (locally for graph consistency + authoritatively in the store).
+        // 5. Opening text -> Assistant turn (locally for graph consistency + authoritatively in the store).
+        // Redis is written before SQL: if Redis fails nothing is persisted; if SQL fails the Redis key expires by TTL.
         var opener = "Welcome to your new session!";
+        state.Working.Append(ChatRole.Assistant, opener);
+        await _workingMemory.AppendAsync(userId, session.Id, ChatRole.Assistant, opener, cancellationToken);
+
+        // 6. Persistence of the session record.
+        await _sessions.AddAsync(session, cancellationToken);
 
         return new StartSessionResponse(session.Id, openPhase, topic, opener, now);
     }

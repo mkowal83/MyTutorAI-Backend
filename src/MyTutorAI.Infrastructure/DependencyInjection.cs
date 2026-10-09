@@ -15,7 +15,9 @@ using MyTutorAI.Infrastructure.Llm;
 using MyTutorAI.Infrastructure.Persistence;
 using MyTutorAI.Infrastructure.Persistence.Repository;
 using MyTutorAI.Infrastructure.Prompting;
+using MyTutorAI.Infrastructure.Redis;
 using MyTutorAI.Infrastructure.Security;
+using StackExchange.Redis;
 
 namespace MyTutorAI.Infrastructure;
 
@@ -91,12 +93,16 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// EN: Registers the SQL Server <see cref="AppDbContext"/> and the repositories as scoped. The connection string is read from <see cref="DatabaseOptions"/>, which must be bound (with <c>ValidateOnStart</c>) by the caller. The schema is managed by EF migrations applied outside the application.
-    /// PL: Rejestruje <see cref="AppDbContext"/> dla SQL Server i repozytoria jako scoped. Connection string jest czytany z <see cref="DatabaseOptions"/>, które musi podpiąć wywołujący (z <c>ValidateOnStart</c>). Schemat jest zarządzany migracjami EF stosowanymi poza aplikacją.
+    /// EN: Registers the SQL Server <see cref="AppDbContext"/> and the repositories as scoped, and the Redis connection with <see cref="IWorkingMemoryStore"/> as singletons. The SQL connection string is read from <see cref="DatabaseOptions"/>, which must be bound (with <c>ValidateOnStart</c>) by the caller; <see cref="RedisOptions"/> is bound here with DataAnnotations validation and <c>ValidateOnStart</c>. The Redis multiplexer does not abort when the server is unreachable — it reconnects in the background and individual commands fail instead. The schema is managed by EF migrations applied outside the application.
+    /// PL: Rejestruje <see cref="AppDbContext"/> dla SQL Server i repozytoria jako scoped oraz połączenie Redis z <see cref="IWorkingMemoryStore"/> jako singletony. Connection string SQL jest czytany z <see cref="DatabaseOptions"/>, które musi podpiąć wywołujący (z <c>ValidateOnStart</c>); <see cref="RedisOptions"/> są podpinane tutaj z walidacją DataAnnotations i <c>ValidateOnStart</c>. Multiplekser Redis nie przerywa działania, gdy serwer jest niedostępny — łączy się ponownie w tle, a błędem kończą się pojedyncze komendy. Schemat jest zarządzany migracjami EF stosowanymi poza aplikacją.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
     /// PL: Kolekcja usług do rozszerzenia. Nie może być null.
+    /// </param>
+    /// <param name="configuration">
+    /// EN: Application configuration containing the <c>Redis</c> section.
+    /// PL: Konfiguracja aplikacji zawierająca sekcję <c>Redis</c>.
     /// </param>
     /// <returns>
     /// EN: The same <paramref name="services"/> instance, for chaining.
@@ -106,12 +112,27 @@ public static class DependencyInjection
     /// EN: <paramref name="services"/> is null.
     /// PL: <paramref name="services"/> jest null.
     /// </exception>
-    public static IServiceCollection AddPersistence(this IServiceCollection services)
+    public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseSqlServer(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
+
+        services.AddOptions<RedisOptions>()
+            .Bind(configuration.GetSection(RedisOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var options = ConfigurationOptions.Parse(sp.GetRequiredService<IOptions<RedisOptions>>().Value.ConnectionString);
+            // Keep retrying in the background instead of throwing when Redis is unreachable at first use.
+            options.AbortOnConnectFail = false;
+            return ConnectionMultiplexer.Connect(options);
+        });
+        services.AddSingleton<IDatabase>(sp => sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
+        services.AddSingleton<IWorkingMemoryStore, WorkingMemoryStore>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

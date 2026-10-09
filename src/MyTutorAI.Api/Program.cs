@@ -23,7 +23,7 @@ builder.Services.AddOptions<DatabaseOptions>()
 builder.Services.AddApplication();
 builder.Services.AddPromptRendering(useDiskTemplates: builder.Environment.IsDevelopment());
 builder.Services.AddLlmClient();
-builder.Services.AddPersistence();
+builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddAuthServices(builder.Configuration);
 
 builder.Services.AddProblemDetails();

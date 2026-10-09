@@ -4,13 +4,14 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 namespace MyTutorAI.Api.ErrorHandling;
 
 
 /// <summary>
-/// EN: Single place that turns unhandled exceptions into the API's uniform <c>application/problem+json</c> error format with a predictable HTTP status: <see cref="ValidationException"/> → 400 with per-field errors, <see cref="UnauthorizedException"/> → 401, <see cref="DbUpdateConcurrencyException"/> → 409, <see cref="LlmException"/> → 502, <see cref="DbException"/> → 503 with <c>Retry-After</c>, anything else → 500. Registered as a singleton by <c>AddExceptionHandler</c>.
-/// PL: Jedno miejsce zamieniające nieobsłużone wyjątki na jednolity format błędów API <c>application/problem+json</c> z przewidywalnym statusem HTTP: <see cref="ValidationException"/> → 400 z błędami pól, <see cref="UnauthorizedException"/> → 401, <see cref="DbUpdateConcurrencyException"/> → 409, <see cref="LlmException"/> → 502, <see cref="DbException"/> → 503 z <c>Retry-After</c>, wszystko inne → 500. Rejestrowany jako singleton przez <c>AddExceptionHandler</c>.
+/// EN: Single place that turns unhandled exceptions into the API's uniform <c>application/problem+json</c> error format with a predictable HTTP status: <see cref="ValidationException"/> → 400 with per-field errors, <see cref="UnauthorizedException"/> → 401, <see cref="DbUpdateConcurrencyException"/> → 409, <see cref="LlmException"/> → 502, <see cref="DbException"/>, <see cref="RedisConnectionException"/> and <see cref="RedisTimeoutException"/> → 503 with <c>Retry-After</c>, anything else → 500. Registered as a singleton by <c>AddExceptionHandler</c>.
+/// PL: Jedno miejsce zamieniające nieobsłużone wyjątki na jednolity format błędów API <c>application/problem+json</c> z przewidywalnym statusem HTTP: <see cref="ValidationException"/> → 400 z błędami pól, <see cref="UnauthorizedException"/> → 401, <see cref="DbUpdateConcurrencyException"/> → 409, <see cref="LlmException"/> → 502, <see cref="DbException"/>, <see cref="RedisConnectionException"/> i <see cref="RedisTimeoutException"/> → 503 z <c>Retry-After</c>, wszystko inne → 500. Rejestrowany jako singleton przez <c>AddExceptionHandler</c>.
 /// </summary>
 /// <param name="problemDetailsService">
 /// EN: Writes the problem response.
@@ -25,7 +26,7 @@ public sealed class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     // Suggested client retry delay (seconds) after a 503.
-    private const string DatabaseRetryAfterSeconds = "30";
+    private const string StorageRetryAfterSeconds = "30";
 
     /// <summary>
     /// EN: Logs the exception, sets the status code and writes the problem body. <c>Exception.Message</c> is returned as <c>detail</c> except for 409, 500 and 503, where it is hidden; validation error keys are camelCase to match the request JSON.
@@ -75,9 +76,9 @@ public sealed class GlobalExceptionHandler(
 
         httpContext.Response.StatusCode = statusCode;
 
-        if (exception is DbException)
+        if (statusCode == StatusCodes.Status503ServiceUnavailable)
         {
-            httpContext.Response.Headers.RetryAfter = DatabaseRetryAfterSeconds;
+            httpContext.Response.Headers.RetryAfter = StorageRetryAfterSeconds;
         }
 
         ProblemDetails problemDetails = exception is ValidationException validationException
@@ -116,7 +117,7 @@ public sealed class GlobalExceptionHandler(
         UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
         LlmException => (StatusCodes.Status502BadGateway, "LLM service error"),
         DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "The resource was modified by another request. Please try again."),
-        DbException => (StatusCodes.Status503ServiceUnavailable, "Service temporarily unavailable. Please try again later."),
+        DbException or RedisConnectionException or RedisTimeoutException => (StatusCodes.Status503ServiceUnavailable, "Service temporarily unavailable. Please try again later."),
         _ => (StatusCodes.Status500InternalServerError, "An unexpected server error occurred"),
     };
 
