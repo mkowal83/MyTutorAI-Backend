@@ -11,8 +11,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class SessionEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>POST /api/sessions</c>, which validates the request and opens a new session via <see cref="StartSessionHandler"/>; responds 200, 400 (validation problem) or 401.
-    /// PL: Mapuje <c>POST /api/sessions</c>, który waliduje żądanie i otwiera nową sesję przez <see cref="StartSessionHandler"/>; odpowiada 200, 400 (problem walidacji) lub 401.
+    /// EN: Maps <c>POST /api/sessions</c>, which validates the request and opens a new session via <see cref="StartSessionHandler"/> (200, 400 validation problem or 401), and <c>GET /api/sessions/{sessionId}</c>, which returns the session state and its Working memory history via <see cref="GetSessionStateHandler"/> (200, 401 or 404).
+    /// PL: Mapuje <c>POST /api/sessions</c>, który waliduje żądanie i otwiera nową sesję przez <see cref="StartSessionHandler"/> (200, 400 problem walidacji lub 401), oraz <c>GET /api/sessions/{sessionId}</c>, który zwraca stan sesji i jej historię z pamięci Working przez <see cref="GetSessionStateHandler"/> (200, 401 lub 404).
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder to add the endpoints to.
@@ -36,10 +36,23 @@ public static class SessionEndpoints
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/{sessionId:guid}", GetStateAsync)
+            .WithName("Sessions_GetState")
+            .WithSummary("Returns the session state and the full working memory history")
+            .WithTags("Sessions")
+            .Produces<SessionStateResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         return endpoints;
     }
 
     private static Task<StartSessionResponse> StartAsync(
         StartSessionRequest request, StartSessionHandler handler, CancellationToken cancellationToken)
         => handler.HandleAsync(request, cancellationToken);
+
+
+    private static Task<SessionStateResponse> GetStateAsync(
+        Guid sessionId, GetSessionStateHandler handler, CancellationToken cancellationToken)
+        => handler.HandleAsync(sessionId, cancellationToken);
 }
