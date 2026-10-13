@@ -45,13 +45,22 @@ public sealed class EpisodicMemoryRepository : IEpisodicMemoryRepository
     {
         ArgumentNullException.ThrowIfNull(episodic);
 
-        var exists = await _db.Episodes.AsNoTracking()
-            .AnyAsync(e => EF.Property<Guid>(e, "UserId") == userId, cancellationToken)
+        var rowVersion = await _db.Episodes.AsNoTracking()
+            .Where(e => EF.Property<Guid>(e, "UserId") == userId)
+            .Select(e => EF.Property<byte[]>(e, "RowVersion"))
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var entry = _db.Entry(episodic);
-        entry.Property("UserId").CurrentValue = userId;
-        entry.State = exists ? EntityState.Modified : EntityState.Added;
+        _db.Entry(episodic).Property("UserId").CurrentValue = userId;
+
+        // Add/Update traverse the graph, so the owned JSON episodes are saved too.
+        var entry = rowVersion is null ? _db.Episodes.Add(episodic) : _db.Episodes.Update(episodic);
+
+        // Reads are not tracked, so the row version is lost; restore it to avoid a false concurrency conflict.
+        if (rowVersion is not null)
+        {
+            entry.Property("RowVersion").OriginalValue = rowVersion;
+        }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

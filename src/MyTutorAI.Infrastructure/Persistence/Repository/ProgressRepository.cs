@@ -45,13 +45,21 @@ public sealed class ProgressRepository : IProgressRepository
     {
         ArgumentNullException.ThrowIfNull(progress);
 
-        var exists = await _db.Progress.AsNoTracking()
-            .AnyAsync(p => EF.Property<Guid>(p, "UserId") == userId, cancellationToken)
+        var rowVersion = await _db.Progress.AsNoTracking()
+            .Where(p => EF.Property<Guid>(p, "UserId") == userId)
+            .Select(p => EF.Property<byte[]>(p, "RowVersion"))
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         var entry = _db.Entry(progress);
         entry.Property("UserId").CurrentValue = userId;
-        entry.State = exists ? EntityState.Modified : EntityState.Added;
+        entry.State = rowVersion is null ? EntityState.Added : EntityState.Modified;
+
+        // Reads are not tracked, so the row version is lost; restore it to avoid a false concurrency conflict.
+        if (rowVersion is not null)
+        {
+            entry.Property("RowVersion").OriginalValue = rowVersion;
+        }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

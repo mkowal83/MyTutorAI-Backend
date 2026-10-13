@@ -46,11 +46,21 @@ public sealed class StudentProfileRepository : IStudentProfileRepository
     {
         ArgumentNullException.ThrowIfNull(profile);
 
-        var exists = await _db.StudentProfiles.AsNoTracking()
-            .AnyAsync(p => p.UserId == profile.UserId, cancellationToken)
+        var rowVersion = await _db.StudentProfiles.AsNoTracking()
+            .Where(p => p.UserId == profile.UserId)
+            .Select(p => EF.Property<byte[]>(p, "RowVersion"))
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        _db.Entry(profile).State = exists ? EntityState.Modified : EntityState.Added;
+        // Add/Update traverse the graph, so the owned JSON types are saved too.
+        var entry = rowVersion is null ? _db.StudentProfiles.Add(profile) : _db.StudentProfiles.Update(profile);
+
+        // Reads are not tracked, so the row version is lost; restore it to avoid a false concurrency conflict.
+        if (rowVersion is not null)
+        {
+            entry.Property("RowVersion").OriginalValue = rowVersion;
+        }
+
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

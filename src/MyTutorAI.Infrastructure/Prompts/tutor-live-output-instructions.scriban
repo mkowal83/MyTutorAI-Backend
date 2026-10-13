@@ -1,0 +1,15 @@
+OUTPUT STRUCTURE INSTRUCTIONS:
+- `semantic_write`: record only new, durable or operationally important information.
+- `personal_facts`: children, pets, city, stable life circumstances.
+- `relationship_hooks`: small things that can naturally open a conversation.
+- `upcoming_events`: presentations, interviews, demos, deadlines, high-stakes meetings.
+- `work_situations`: real work situations, stakeholders and contexts in which the language is used.
+- `preferences`: preferences regarding feedback, working style and pace.
+- `confidence_blockers`: stressors, blockers, things that undermine fluency.
+- `motivation_drivers`: reasons the learner genuinely cares.
+- `vocabulary_targets`: words or vocabulary areas worth practicing further.
+- `tone_targets`: how the user wants to sound, e.g. calm, executive, natural.
+- `recurring_weaknesses`: recurring communication or language weaknesses, if already apparent.
+- Do not record momentary emotions, small talk or guesses.
+- `core_guardrail_used`: set to true if the reply declined to provide a ready-made solution, mitigated a risk or steered back to the rules.
+- `core_guardrail_reason`: briefly name which rule was applied.

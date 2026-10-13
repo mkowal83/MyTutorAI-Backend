@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,8 +69,8 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// EN: Registers <see cref="IStructuredOutputClient"/> as a typed <see cref="HttpClient"/> client. <c>LlmOptions</c> must be bound by the caller; the HTTP resilience pipeline is not configured yet.
-    /// PL: Rejestruje <see cref="IStructuredOutputClient"/> jako typowanego klienta <see cref="HttpClient"/>. <c>LlmOptions</c> musi podpiąć wywołujący; pipeline odporności HTTP nie jest jeszcze skonfigurowany.
+    /// EN: Registers <see cref="IStructuredOutputClient"/> as a typed <see cref="HttpClient"/> client. <c>LlmOptions</c> must be bound by the caller; no HTTP resilience handler is registered here.
+    /// PL: Rejestruje <see cref="IStructuredOutputClient"/> jako typowanego klienta <see cref="HttpClient"/>. <c>LlmOptions</c> musi podpiąć wywołujący; nie rejestruje tu handlera odporności HTTP.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
@@ -93,16 +94,16 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// EN: Registers the SQL Server <see cref="AppDbContext"/> and the repositories as scoped, and the Redis connection with <see cref="IWorkingMemoryStore"/> as singletons. The SQL connection string is read from <see cref="DatabaseOptions"/>, which must be bound (with <c>ValidateOnStart</c>) by the caller; <see cref="RedisOptions"/> is bound here with DataAnnotations validation and <c>ValidateOnStart</c>. The Redis multiplexer does not abort when the server is unreachable — it reconnects in the background and individual commands fail instead. The schema is managed by EF migrations applied outside the application.
-    /// PL: Rejestruje <see cref="AppDbContext"/> dla SQL Server i repozytoria jako scoped oraz połączenie Redis z <see cref="IWorkingMemoryStore"/> jako singletony. Connection string SQL jest czytany z <see cref="DatabaseOptions"/>, które musi podpiąć wywołujący (z <c>ValidateOnStart</c>); <see cref="RedisOptions"/> są podpinane tutaj z walidacją DataAnnotations i <c>ValidateOnStart</c>. Multiplekser Redis nie przerywa działania, gdy serwer jest niedostępny — łączy się ponownie w tle, a błędem kończą się pojedyncze komendy. Schemat jest zarządzany migracjami EF stosowanymi poza aplikacją.
+    /// EN: Registers the SQL Server <see cref="AppDbContext"/> and the repositories as scoped, and the Redis connection with <see cref="IWorkingMemoryStore"/> as singletons; <see cref="IAgentStateStore"/> is scoped and its per-user lock provider a singleton. The SQL connection string is read from <see cref="DatabaseOptions"/>, which must be bound (with <c>ValidateOnStart</c>) by the caller; <see cref="RedisOptions"/> and <see cref="MemoryLimitsOptions"/> are bound here with DataAnnotations validation and <c>ValidateOnStart</c>. The Redis multiplexer does not abort when the server is unreachable — it reconnects in the background and individual commands fail instead. The schema is managed by EF migrations applied outside the application.
+    /// PL: Rejestruje <see cref="AppDbContext"/> dla SQL Server i repozytoria jako scoped oraz połączenie Redis z <see cref="IWorkingMemoryStore"/> jako singletony; <see cref="IAgentStateStore"/> jest scoped, a jego dostawca blokad per użytkownik — singletonem. Connection string SQL jest czytany z <see cref="DatabaseOptions"/>, które musi podpiąć wywołujący (z <c>ValidateOnStart</c>); <see cref="RedisOptions"/> i <see cref="MemoryLimitsOptions"/> są podpinane tutaj z walidacją DataAnnotations i <c>ValidateOnStart</c>. Multiplekser Redis nie przerywa działania, gdy serwer jest niedostępny — łączy się ponownie w tle, a błędem kończą się pojedyncze komendy. Schemat jest zarządzany migracjami EF stosowanymi poza aplikacją.
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
     /// PL: Kolekcja usług do rozszerzenia. Nie może być null.
     /// </param>
     /// <param name="configuration">
-    /// EN: Application configuration containing the <c>Redis</c> section.
-    /// PL: Konfiguracja aplikacji zawierająca sekcję <c>Redis</c>.
+    /// EN: Application configuration containing the <c>MemoryLimits</c> and <c>Redis</c> sections.
+    /// PL: Konfiguracja aplikacji zawierająca sekcje <c>MemoryLimits</c> i <c>Redis</c>.
     /// </param>
     /// <returns>
     /// EN: The same <paramref name="services"/> instance, for chaining.
@@ -115,6 +116,12 @@ public static class DependencyInjection
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.AddOptions<MemoryLimitsOptions>()
+            .Bind(configuration.GetSection(MemoryLimitsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseSqlServer(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
@@ -141,6 +148,10 @@ public static class DependencyInjection
         services.AddScoped<IProgressRepository, ProgressRepository>();
         services.AddScoped<IEpisodicMemoryRepository, EpisodicMemoryRepository>();
         services.AddScoped<ISessionRepository, SessionRepository>();
+
+        // Per-user locks must be shared across requests, so the provider is a singleton.
+        services.AddSingleton<AgentStateLockProvider>();
+        services.AddScoped<IAgentStateStore, AgentStateStore>();
 
         return services;
     }

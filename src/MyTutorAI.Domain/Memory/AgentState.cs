@@ -82,6 +82,12 @@ public sealed class AgentState
     }
 
     /// <summary>
+    /// EN: Identifier of the learner who owns this state, taken from <see cref="Profile"/>.
+    /// PL: Identyfikator ucznia, do którego należy ten stan, pobierany z <see cref="Profile"/>.
+    /// </summary>
+    public Guid UserId => Profile.UserId;
+
+    /// <summary>
     /// EN: Immutable identity and prime directives of the coach (Core layer).
     /// PL: Niezmienna tożsamość i nadrzędne dyrektywy coacha (warstwa Core).
     /// </summary>
