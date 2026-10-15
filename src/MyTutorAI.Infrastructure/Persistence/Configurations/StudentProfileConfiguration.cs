@@ -11,8 +11,8 @@ namespace MyTutorAI.Infrastructure.Persistence.Configurations;
 public sealed class StudentProfileConfiguration : IEntityTypeConfiguration<StudentProfile>
 {
     /// <summary>
-    /// EN: Configures field-based property access, the key, required columns, JSON-owned goals and contexts, and the row version.
-    /// PL: Konfiguruje dostęp do właściwości przez pola, klucz, wymagane kolumny, cele i konteksty jako posiadane typy w JSON oraz wersję wiersza.
+    /// EN: Configures field-based property access, the key, required columns, goals as a complex collection in the <c>Goals</c> JSON column, contexts as owned JSON types, and the row version.
+    /// PL: Konfiguruje dostęp do właściwości przez pola, klucz, wymagane kolumny, cele jako kolekcję typu złożonego w kolumnie JSON <c>Goals</c>, konteksty jako posiadane typy w JSON oraz wersję wiersza.
     /// </summary>
     /// <param name="builder">
     /// EN: Entity type builder supplied by EF Core.
@@ -33,7 +33,12 @@ public sealed class StudentProfileConfiguration : IEntityTypeConfiguration<Stude
 
         builder.Property(p => p.Preferences);
 
-        builder.OwnsMany(p => p.Goals, goals => goals.ToJson());
+        // EN: Complex collection (no shadow ordinal key), so updating a detached profile rewrites the whole JSON column.
+        //     Mapped through the List<LearnerGoal> backing field because complex collections require IList<T>.
+        // PL: Kolekcja typu złożonego (bez shadow klucza ordinal), więc aktualizacja odłączonego profilu nadpisuje całą kolumnę JSON.
+        //     Mapowana przez pole List<LearnerGoal>, bo kolekcje typów złożonych wymagają IList<T>.
+        builder.Ignore(p => p.Goals);
+        builder.ComplexCollection<List<LearnerGoal>, LearnerGoal>("_goals", goals => goals.ToJson("Goals"));
 
         builder.OwnsOne(p => p.WorkContext, wc => wc.ToJson());
         builder.OwnsOne(p => p.CommunicationPreferences, cp => cp.ToJson());

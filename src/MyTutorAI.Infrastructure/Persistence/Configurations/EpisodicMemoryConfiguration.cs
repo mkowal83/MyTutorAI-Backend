@@ -7,8 +7,8 @@ using System.Text.Json;
 namespace MyTutorAI.Infrastructure.Persistence.Configurations;
 
 /// <summary>
-/// EN: EF Core mapping of <see cref="EpisodicMemory"/>: one row per user keyed by the <c>UserId</c> shadow property, episodes stored as a JSON column, and a <c>RowVersion</c> concurrency token.
-/// PL: Mapowanie EF Core dla <see cref="EpisodicMemory"/>: jeden wiersz na użytkownika kluczowany shadow property <c>UserId</c>, epizody zapisane jako kolumna JSON oraz token współbieżności <c>RowVersion</c>.
+/// EN: EF Core mapping of <see cref="EpisodicMemory"/>: one row per user keyed by the <c>UserId</c> shadow property, episodes stored as a complex collection in the <c>Episodes</c> JSON column (each episode's mistakes serialized as a JSON string), and a <c>RowVersion</c> concurrency token.
+/// PL: Mapowanie EF Core dla <see cref="EpisodicMemory"/>: jeden wiersz na użytkownika kluczowany shadow property <c>UserId</c>, epizody zapisane jako kolekcja typu złożonego w kolumnie JSON <c>Episodes</c> (błędy każdego epizodu serializowane jako string JSON) oraz token współbieżności <c>RowVersion</c>.
 /// </summary>
 public sealed class EpisodicMemoryConfiguration : IEntityTypeConfiguration<EpisodicMemory>
 {
@@ -31,10 +31,15 @@ public sealed class EpisodicMemoryConfiguration : IEntityTypeConfiguration<Episo
 
         builder.Property(e => e.MaxEpisodes).IsRequired();
 
-        builder.OwnsMany(e => e.Episodes, episode =>
+        // EN: Complex collection (no shadow ordinal key), so updating a detached episodic memory rewrites the whole JSON column.
+        //     Mapped through the List<Episode> backing field because complex collections require IList<T>.
+        // PL: Kolekcja typu złożonego (bez shadow klucza ordinal), więc aktualizacja odłączonej pamięci epizodycznej nadpisuje całą kolumnę JSON.
+        //     Mapowana przez pole List<Episode>, bo kolekcje typów złożonych wymagają IList<T>.
+        builder.Ignore(e => e.Episodes);
+        builder.ComplexCollection<List<Episode>, Episode>("_episodes", episode =>
         {
             episode.UsePropertyAccessMode(PropertyAccessMode.Field);
-            episode.ToJson();
+            episode.ToJson("Episodes");
 
             episode.Property(ep => ep.Summary).IsRequired();
             episode.Property(ep => ep.PersonalFacts);

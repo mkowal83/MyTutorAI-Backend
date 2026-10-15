@@ -53,7 +53,7 @@ public sealed class EpisodicMemoryRepository : IEpisodicMemoryRepository
 
         _db.Entry(episodic).Property("UserId").CurrentValue = userId;
 
-        // Add/Update traverse the graph, so the owned JSON episodes are saved too.
+        // Episodes are a complex JSON collection (no keys), so Add/Update rewrite the whole column.
         var entry = rowVersion is null ? _db.Episodes.Add(episodic) : _db.Episodes.Update(episodic);
 
         // Reads are not tracked, so the row version is lost; restore it to avoid a false concurrency conflict.

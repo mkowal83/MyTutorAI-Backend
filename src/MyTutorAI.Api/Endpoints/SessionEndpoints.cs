@@ -11,8 +11,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class SessionEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>POST /api/sessions</c>, which validates the request and opens a new session via <see cref="StartSessionHandler"/> (200, 400 validation problem or 401), and <c>GET /api/sessions/{sessionId}</c>, which returns the session state and its Working memory history via <see cref="GetSessionStateHandler"/> (200, 401 or 404), and <c>POST /api/sessions/{sessionId}/messages</c>, which validates the learner's message and returns the tutor's reply via <see cref="SendMessageHandler"/> (200, 400 validation problem, 401, 404, 409 for a closed session or 502 for an LLM failure).
-    /// PL: Mapuje <c>POST /api/sessions</c>, który waliduje żądanie i otwiera nową sesję przez <see cref="StartSessionHandler"/> (200, 400 problem walidacji lub 401), oraz <c>GET /api/sessions/{sessionId}</c>, który zwraca stan sesji i jej historię z pamięci Working przez <see cref="GetSessionStateHandler"/> (200, 401 lub 404), oraz <c>POST /api/sessions/{sessionId}/messages</c>, który waliduje wiadomość ucznia i zwraca odpowiedź tutora przez <see cref="SendMessageHandler"/> (200, 400 problem walidacji, 401, 404, 409 dla zamkniętej sesji lub 502 dla awarii LLM).
+    /// EN: Maps <c>POST /api/sessions</c>, which validates the request and opens a new session via <see cref="StartSessionHandler"/> (200, 400 validation problem or 401), and <c>GET /api/sessions/{sessionId}</c>, which returns the session state and its Working memory history via <see cref="GetSessionStateHandler"/> (200, 401 or 404), and <c>POST /api/sessions/{sessionId}/messages</c>, which validates the learner's message and returns the tutor's reply via <see cref="SendMessageHandler"/> (200, 400 validation problem, 401, 404, 409 for a closed session or 502 for an LLM failure), and <c>POST /api/sessions/{sessionId}/close</c>, which compresses the session into an episode and closes it via <see cref="CloseSessionHandler"/> (200, 401, 404, 409 for an already closed or empty session or 502 for an LLM failure).
+    /// PL: Mapuje <c>POST /api/sessions</c>, który waliduje żądanie i otwiera nową sesję przez <see cref="StartSessionHandler"/> (200, 400 problem walidacji lub 401), oraz <c>GET /api/sessions/{sessionId}</c>, który zwraca stan sesji i jej historię z pamięci Working przez <see cref="GetSessionStateHandler"/> (200, 401 lub 404), oraz <c>POST /api/sessions/{sessionId}/messages</c>, który waliduje wiadomość ucznia i zwraca odpowiedź tutora przez <see cref="SendMessageHandler"/> (200, 400 problem walidacji, 401, 404, 409 dla zamkniętej sesji lub 502 dla awarii LLM), oraz <c>POST /api/sessions/{sessionId}/close</c>, który kompresuje sesję do epizodu i zamyka ją przez <see cref="CloseSessionHandler"/> (200, 401, 404, 409 dla już zamkniętej lub pustej sesji lub 502 dla awarii LLM).
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder to add the endpoints to.
@@ -57,6 +57,17 @@ public static class SessionEndpoints
             .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .ProducesProblem(StatusCodes.Status502BadGateway);
 
+        group.MapPost("/{sessionId:guid}/close", CloseAsync)
+            .WithName("Sessions_Close")
+            .WithSummary("It closes the session and compresses it into an episode")
+            .WithTags("Sessions")
+            .Produces<CloseSessionResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status502BadGateway);
+
         return endpoints;
     }
 
@@ -75,4 +86,8 @@ public static class SessionEndpoints
         SendMessageHandler handler,
         CancellationToken cancellationToken)
         => handler.HandleAsync(sessionId, request, cancellationToken);
+
+    private static Task<CloseSessionResponse> CloseAsync(
+        Guid sessionId, CloseSessionHandler handler, CancellationToken cancellationToken)
+        => handler.HandleAsync(sessionId, cancellationToken);
 }

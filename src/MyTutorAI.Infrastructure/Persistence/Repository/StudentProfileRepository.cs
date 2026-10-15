@@ -52,7 +52,7 @@ public sealed class StudentProfileRepository : IStudentProfileRepository
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Add/Update traverse the graph, so the owned JSON types are saved too.
+        // Add/Update traverse the graph, so the owned JSON types and the complex JSON goals are saved too.
         var entry = rowVersion is null ? _db.StudentProfiles.Add(profile) : _db.StudentProfiles.Update(profile);
 
         // Reads are not tracked, so the row version is lost; restore it to avoid a false concurrency conflict.
