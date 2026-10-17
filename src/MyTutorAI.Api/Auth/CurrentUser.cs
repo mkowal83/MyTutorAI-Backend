@@ -3,7 +3,7 @@ using MyTutorAI.Application.Abstractions;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace MyTutorAI.Infrastructure.Auth;
+namespace MyTutorAI.Api.Auth;
 
 /// <summary>
 /// EN: <see cref="ICurrentUser"/> implementation that reads the user from the current <see cref="HttpContext"/>; registered in DI as scoped.

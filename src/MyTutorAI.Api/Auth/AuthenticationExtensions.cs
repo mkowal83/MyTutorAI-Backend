@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MyTutorAI.Application.Abstractions;
 using MyTutorAI.Application.Options;
 
 namespace MyTutorAI.Api.Auth;
@@ -13,8 +14,8 @@ namespace MyTutorAI.Api.Auth;
 public static class AuthenticationExtensions
 {
     /// <summary>
-    /// EN: Registers JWT Bearer as the default authentication scheme and the authorization services. Validation parameters (issuer, audience, HMAC-SHA256 signing key) come from <see cref="JwtOptions"/>, which must be bound by the caller (<c>AddAuthServices</c>).
-    /// PL: Rejestruje JWT Bearer jako domyślny schemat uwierzytelniania oraz usługi autoryzacji. Parametry walidacji (issuer, audience, klucz podpisu HMAC-SHA256) pochodzą z <see cref="JwtOptions"/>, które musi podpiąć wywołujący (<c>AddAuthServices</c>).
+    /// EN: Registers JWT Bearer as the default authentication scheme, the authorization services, the <c>IHttpContextAccessor</c> and <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) as scoped. Validation parameters (issuer, audience, HMAC-SHA256 signing key) come from <see cref="JwtOptions"/>, which must be bound by the caller (<c>AddAuthServices</c>).
+    /// PL: Rejestruje JWT Bearer jako domyślny schemat uwierzytelniania, usługi autoryzacji, <c>IHttpContextAccessor</c> oraz <see cref="ICurrentUser"/> (<see cref="CurrentUser"/>) jako scoped. Parametry walidacji (issuer, audience, klucz podpisu HMAC-SHA256) pochodzą z <see cref="JwtOptions"/>, które musi podpiąć wywołujący (<c>AddAuthServices</c>).
     /// </summary>
     /// <param name="services">
     /// EN: Service collection to extend. Must not be null.
@@ -54,6 +55,9 @@ public static class AuthenticationExtensions
             });
 
         services.AddAuthorization();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return services;
     }

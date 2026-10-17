@@ -1,8 +1,8 @@
 namespace MyTutorAI.Application.Abstractions;
 
 /// <summary>
-/// EN: Application port exposing the identity of the user making the current request; implemented in Infrastructure and registered as scoped.
-/// PL: Port Application udostępniający tożsamość użytkownika wykonującego bieżące żądanie; implementowany w Infrastructure i rejestrowany jako scoped.
+/// EN: Application port exposing the identity of the user making the current request; implemented in Api (it reads the HTTP context) and registered as scoped.
+/// PL: Port Application udostępniający tożsamość użytkownika wykonującego bieżące żądanie; implementowany w Api (czyta kontekst HTTP) i rejestrowany jako scoped.
 /// </summary>
 public interface ICurrentUser
 {

@@ -13,6 +13,8 @@
 	-->
 	<ItemGroup>
 		<PackageReference Include="Scriban" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Physical" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
 	</ItemGroup>
 
 	<!--
@@ -74,10 +76,23 @@
 	-->
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+		<PackageReference Include="Microsoft.Extensions.Identity.Core" />
 		<PackageReference Include="StackExchange.Redis" />
 	</ItemGroup>
 
+	<!--
+	EN: Packages that previously came from the Microsoft.AspNetCore.App framework reference, now explicit so Infrastructure does not depend on the web stack.
+	    Microsoft.Extensions.Http — AddHttpClient for the LLM client.
+	    Microsoft.IdentityModel.JsonWebTokens — issuing JWT access tokens.
+	    Microsoft.Extensions.Options.DataAnnotations — ValidateDataAnnotations for the options bound here.
+	PL: Pakiety, które wcześniej dawała referencja frameworka Microsoft.AspNetCore.App, teraz jawne, aby Infrastructure nie zależało od stosu webowego.
+	    Microsoft.Extensions.Http — AddHttpClient dla klienta LLM.
+	    Microsoft.IdentityModel.JsonWebTokens — wydawanie access tokenów JWT.
+	    Microsoft.Extensions.Options.DataAnnotations — ValidateDataAnnotations dla opcji podpinanych tutaj.
+	-->
 	<ItemGroup>
-		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		<PackageReference Include="Microsoft.Extensions.Http" />
+		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+		<PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
 	</ItemGroup>
 </Project>

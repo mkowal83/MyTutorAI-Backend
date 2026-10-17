@@ -6,14 +6,14 @@ using MyTutorAI.Application.Contracts.Auth;
 namespace MyTutorAI.Api.Endpoints;
 
 /// <summary>
-/// EN: Minimal API endpoints of the authentication group <c>/api/auth</c>; rate limited per client IP and anonymous except logout, which requires an access token.
-/// PL: Endpointy Minimal API grupy uwierzytelniania <c>/api/auth</c>; z rate limitingiem per adres IP klienta i anonimowe z wyjątkiem wylogowania, które wymaga access tokenu.
+/// EN: Minimal API endpoints of the authentication group <c>/api/auth</c>; rate limited per client IP and anonymous except logout and current-user data, which require an access token.
+/// PL: Endpointy Minimal API grupy uwierzytelniania <c>/api/auth</c>; z rate limitingiem per adres IP klienta i anonimowe z wyjątkiem wylogowania i danych bieżącego użytkownika, które wymagają access tokenu.
 /// </summary>
 public static class AuthEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>POST /api/auth/register</c>, <c>POST /api/auth/login</c>, <c>POST /api/auth/refresh</c> and <c>POST /api/auth/logout</c>. Register returns 202 without a body both for a new and an already registered e-mail, so it does not reveal which e-mails have accounts; login returns 200 with <see cref="AuthResponse"/> or 401 with the same message for an unknown e-mail and a wrong password; refresh rotates the refresh token and returns 200 with a new <see cref="AuthResponse"/>, 400 for a missing token or 401 with the same message for any invalid token; logout requires an access token and returns 204 also for an unknown, expired or another user's refresh token, 400 for a missing token without <c>AllDevices</c> or 401 without a valid access token.
-    /// PL: Mapuje <c>POST /api/auth/register</c>, <c>POST /api/auth/login</c>, <c>POST /api/auth/refresh</c> i <c>POST /api/auth/logout</c>. Rejestracja zwraca 202 bez body zarówno dla nowego, jak i już zarejestrowanego e-maila, więc nie zdradza, które e-maile mają konta; logowanie zwraca 200 z <see cref="AuthResponse"/> albo 401 z tym samym komunikatem dla nieznanego e-maila i błędnego hasła; odświeżenie rotuje refresh token i zwraca 200 z nowym <see cref="AuthResponse"/>, 400 dla brakującego tokenu albo 401 z tym samym komunikatem dla każdego nieprawidłowego tokenu; wylogowanie wymaga access tokenu i zwraca 204 także dla nieznanego, wygasłego lub cudzego refresh tokenu, 400 dla brakującego tokenu bez <c>AllDevices</c> albo 401 bez ważnego access tokenu.
+    /// EN: Maps <c>POST /api/auth/register</c>, <c>POST /api/auth/login</c>, <c>POST /api/auth/refresh</c>, <c>POST /api/auth/logout</c> and <c>GET /api/auth/me</c>. Register returns 202 without a body both for a new and an already registered e-mail, so it does not reveal which e-mails have accounts; login returns 200 with <see cref="AuthResponse"/> or 401 with the same message for an unknown e-mail and a wrong password; refresh rotates the refresh token and returns 200 with a new <see cref="AuthResponse"/>, 400 for a missing token or 401 with the same message for any invalid token; logout requires an access token and returns 204 also for an unknown, expired or another user's refresh token, 400 for a missing token without <c>AllDevices</c> or 401 without a valid access token; me requires an access token and returns 200 with <see cref="CurrentUserResponse"/>, 401 without a valid access token or 404 when the account no longer exists.
+    /// PL: Mapuje <c>POST /api/auth/register</c>, <c>POST /api/auth/login</c>, <c>POST /api/auth/refresh</c>, <c>POST /api/auth/logout</c> i <c>GET /api/auth/me</c>. Rejestracja zwraca 202 bez body zarówno dla nowego, jak i już zarejestrowanego e-maila, więc nie zdradza, które e-maile mają konta; logowanie zwraca 200 z <see cref="AuthResponse"/> albo 401 z tym samym komunikatem dla nieznanego e-maila i błędnego hasła; odświeżenie rotuje refresh token i zwraca 200 z nowym <see cref="AuthResponse"/>, 400 dla brakującego tokenu albo 401 z tym samym komunikatem dla każdego nieprawidłowego tokenu; wylogowanie wymaga access tokenu i zwraca 204 także dla nieznanego, wygasłego lub cudzego refresh tokenu, 400 dla brakującego tokenu bez <c>AllDevices</c> albo 401 bez ważnego access tokenu; me wymaga access tokenu i zwraca 200 z <see cref="CurrentUserResponse"/>, 401 bez ważnego access tokenu albo 404, gdy konto już nie istnieje.
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder the endpoints are added to.
@@ -68,6 +68,16 @@ public static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status429TooManyRequests);
 
+        group.MapGet("/me", GetCurrentUserAsync)
+            .RequireAuthorization()
+            .WithName("Auth_GetCurrentUser")
+            .WithSummary("Returns the account data of the logged-in user")
+            .WithTags("Auth")
+            .Produces<CurrentUserResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
         return endpoints;
     }
 
@@ -93,4 +103,8 @@ public static class AuthEndpoints
         await handler.HandleAsync(request, cancellationToken);
         return TypedResults.NoContent();
     }
+
+    private static Task<CurrentUserResponse> GetCurrentUserAsync(
+        GetCurrentUserHandler handler, CancellationToken cancellationToken)
+        => handler.HandleAsync(cancellationToken);
 }

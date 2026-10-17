@@ -1,17 +1,15 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using MyTutorAI.Application.Abstractions;
 using MyTutorAI.Application.Exceptions;
-using StackExchange.Redis;
-using System.Data.Common;
 
 namespace MyTutorAI.Api.ErrorHandling;
 
 
 /// <summary>
-/// EN: Single place that turns unhandled exceptions into the API's uniform <c>application/problem+json</c> error format with a predictable HTTP status: <see cref="ValidationException"/> → 400 with per-field errors, <see cref="BadHttpRequestException"/> (unreadable body, e.g. malformed JSON) → its own status (usually 400) with a generic detail, <see cref="UnauthorizedException"/> → 401, <see cref="FeatureDisabledException"/> and <see cref="SessionNotFoundException"/> → 404, <see cref="ConflictException"/>, <see cref="EmptySessionException"/> and <see cref="DbUpdateConcurrencyException"/> → 409, <see cref="LlmException"/> → 502, <see cref="DbException"/>, <see cref="RedisConnectionException"/> and <see cref="RedisTimeoutException"/> → 503 with <c>Retry-After</c>, anything else → 500. Registered as a singleton by <c>AddExceptionHandler</c>.
-/// PL: Jedno miejsce zamieniające nieobsłużone wyjątki na jednolity format błędów API <c>application/problem+json</c> z przewidywalnym statusem HTTP: <see cref="ValidationException"/> → 400 z błędami pól, <see cref="BadHttpRequestException"/> (nieczytelne body, np. błędny JSON) → jego własny status (zwykle 400) z ogólnym opisem, <see cref="UnauthorizedException"/> → 401, <see cref="FeatureDisabledException"/> i <see cref="SessionNotFoundException"/> → 404, <see cref="ConflictException"/>, <see cref="EmptySessionException"/> i <see cref="DbUpdateConcurrencyException"/> → 409, <see cref="LlmException"/> → 502, <see cref="DbException"/>, <see cref="RedisConnectionException"/> i <see cref="RedisTimeoutException"/> → 503 z <c>Retry-After</c>, wszystko inne → 500. Rejestrowany jako singleton przez <c>AddExceptionHandler</c>.
+/// EN: Single place that turns unhandled exceptions into the API's uniform <c>application/problem+json</c> error format with a predictable HTTP status: <see cref="ValidationException"/> → 400 with per-field errors, <see cref="BadHttpRequestException"/> (unreadable body, e.g. malformed JSON) → its own status (usually 400) with a generic detail, <see cref="UnauthorizedException"/> → 401, <see cref="NotFoundException"/>, <see cref="FeatureDisabledException"/> and <see cref="SessionNotFoundException"/> → 404, <see cref="ConflictException"/>, <see cref="EmptySessionException"/> and <see cref="StorageFailureKind.Conflict"/> → 409, <see cref="LlmException"/> → 502, <see cref="StorageFailureKind.Unavailable"/> → 503 with <c>Retry-After</c>, anything else → 500. Storage exceptions (SQL Server, Redis) are recognised through <see cref="IStorageExceptionClassifier"/>, so the Api does not depend on their types. Registered as a singleton by <c>AddExceptionHandler</c>.
+/// PL: Jedno miejsce zamieniające nieobsłużone wyjątki na jednolity format błędów API <c>application/problem+json</c> z przewidywalnym statusem HTTP: <see cref="ValidationException"/> → 400 z błędami pól, <see cref="BadHttpRequestException"/> (nieczytelne body, np. błędny JSON) → jego własny status (zwykle 400) z ogólnym opisem, <see cref="UnauthorizedException"/> → 401, <see cref="NotFoundException"/>, <see cref="FeatureDisabledException"/> i <see cref="SessionNotFoundException"/> → 404, <see cref="ConflictException"/>, <see cref="EmptySessionException"/> i <see cref="StorageFailureKind.Conflict"/> → 409, <see cref="LlmException"/> → 502, <see cref="StorageFailureKind.Unavailable"/> → 503 z <c>Retry-After</c>, wszystko inne → 500. Wyjątki magazynów (SQL Server, Redis) są rozpoznawane przez <see cref="IStorageExceptionClassifier"/>, więc Api nie zależy od ich typów. Rejestrowany jako singleton przez <c>AddExceptionHandler</c>.
 /// </summary>
 /// <param name="problemDetailsService">
 /// EN: Writes the problem response.
@@ -21,9 +19,14 @@ namespace MyTutorAI.Api.ErrorHandling;
 /// EN: Receives the full exception: Error level for 500, Warning for mapped exceptions.
 /// PL: Otrzymuje pełny wyjątek: poziom Error dla 500, Warning dla zmapowanych wyjątków.
 /// </param>
+/// <param name="storageExceptionClassifier">
+/// EN: Recognises storage conflicts (→ 409) and unavailability (→ 503).
+/// PL: Rozpoznaje konflikty (→ 409) i niedostępność magazynów (→ 503).
+/// </param>
 public sealed class GlobalExceptionHandler(
     IProblemDetailsService problemDetailsService,
-    ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
+    ILogger<GlobalExceptionHandler> logger,
+    IStorageExceptionClassifier storageExceptionClassifier) : IExceptionHandler
 {
     // Suggested client retry delay (seconds) after a 503.
     private const string StorageRetryAfterSeconds = "30";
@@ -117,17 +120,20 @@ public sealed class GlobalExceptionHandler(
         });
     }
 
-    private static (int StatusCode, string Title) MapToProblem(Exception exception) => exception switch
+    private (int StatusCode, string Title) MapToProblem(Exception exception) => exception switch
     {
         ValidationException => (StatusCodes.Status400BadRequest, "Request validation error"),
-        FeatureDisabledException or SessionNotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
+        NotFoundException or FeatureDisabledException or SessionNotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
         UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
         LlmException => (StatusCodes.Status502BadGateway, "LLM service error"),
         ConflictException or EmptySessionException => (StatusCodes.Status409Conflict, "Conflict error"),
-        DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "The resource was modified by another request. Please try again."),
-        DbException or RedisConnectionException or RedisTimeoutException => (StatusCodes.Status503ServiceUnavailable, "Service temporarily unavailable. Please try again later."),
         BadHttpRequestException badRequest => (badRequest.StatusCode, "Invalid request"),
-        _ => (StatusCodes.Status500InternalServerError, "An unexpected server error occurred"),
+        _ => storageExceptionClassifier.Classify(exception) switch
+        {
+            StorageFailureKind.Conflict => (StatusCodes.Status409Conflict, "The resource was modified by another request. Please try again."),
+            StorageFailureKind.Unavailable => (StatusCodes.Status503ServiceUnavailable, "Service temporarily unavailable. Please try again later."),
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected server error occurred"),
+        },
     };
 
     // Field names in errors match the request JSON (camelCase), not the C# properties.
