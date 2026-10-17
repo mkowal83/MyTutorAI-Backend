@@ -59,5 +59,6 @@ if (app.Environment.IsDevelopment())
 app.MapAuthEndpoints();
 app.MapSessionEndpoints();
 app.MapDemoEndpoints(app.Configuration);
+app.MapProfileEndpoints();
 
 app.Run();
