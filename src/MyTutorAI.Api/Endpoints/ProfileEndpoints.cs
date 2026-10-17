@@ -1,4 +1,6 @@
-﻿using MyTutorAI.Application.Contracts.Profile.Dtos;
+﻿using MyTutorAI.Api.Validation;
+using MyTutorAI.Application.Contracts.Profile;
+using MyTutorAI.Application.Contracts.Profile.Dtos;
 using MyTutorAI.Application.Profile;
 
 namespace MyTutorAI.Api.Endpoints;
@@ -10,8 +12,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class ProfileEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>GET /api/profile</c>, which returns the learner profile (declarative fields and semantic layers) as <see cref="StudentProfileDto"/> with 200, or 401 without a valid access token.
-    /// PL: Mapuje <c>GET /api/profile</c>, który zwraca profil ucznia (pola deklaratywne i warstwy semantyczne) jako <see cref="StudentProfileDto"/> z kodem 200 albo 401 bez ważnego access tokenu.
+    /// EN: Maps <c>GET /api/profile</c>, which returns the learner profile (declarative fields and semantic layers) as <see cref="StudentProfileDto"/> with 200, and <c>PUT /api/profile</c>, which overwrites the declarative fields from <see cref="UpdateProfileRequest"/> without touching the LLM semantic layers and returns the saved profile with 200, or 400 with per-field validation errors; both return 401 without a valid access token.
+    /// PL: Mapuje <c>GET /api/profile</c>, który zwraca profil ucznia (pola deklaratywne i warstwy semantyczne) jako <see cref="StudentProfileDto"/> z kodem 200, oraz <c>PUT /api/profile</c>, który nadpisuje pola deklaratywne z <see cref="UpdateProfileRequest"/> bez naruszania warstw semantycznych LLM i zwraca zapisany profil z kodem 200 albo 400 z błędami walidacji poszczególnych pól; oba zwracają 401 bez ważnego access tokenu.
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder the endpoints are added to.
@@ -33,12 +35,27 @@ public static class ProfileEndpoints
             .Produces<StudentProfileDto>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapPut("/", UpdateProfileAsync)
+            .AddEndpointFilter<ValidationFilter<UpdateProfileRequest>>()
+            .WithName("Profile_Update")
+            .WithSummary("Overrides declarative profile fields — LLM semantic layers remain unchanged")
+            .WithTags("Profile")
+            .Produces<StudentProfileDto>(StatusCodes.Status200OK)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         return endpoints;
     }
 
     private static Task<StudentProfileDto> GetProfileAsync(
         GetProfileHandler handler, CancellationToken cancellationToken)
         => handler.HandleAsync(cancellationToken);
+
+    private static Task<StudentProfileDto> UpdateProfileAsync(
+        UpdateProfileRequest request,
+        UpdateProfileHandler handler,
+        CancellationToken cancellationToken)
+        => handler.HandleAsync(request, cancellationToken);
 
 }
 
