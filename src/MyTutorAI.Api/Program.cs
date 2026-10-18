@@ -60,5 +60,6 @@ app.MapAuthEndpoints();
 app.MapSessionEndpoints();
 app.MapDemoEndpoints(app.Configuration);
 app.MapProfileEndpoints();
+app.MapMemoryEndpoints();
 
 app.Run();
