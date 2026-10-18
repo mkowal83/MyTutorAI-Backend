@@ -1,5 +1,6 @@
 ﻿using MyTutorAI.Application.Contracts.Memory;
 using MyTutorAI.Application.Memory;
+using MyTutorAI.Domain.Memory.Session;
 
 namespace MyTutorAI.Api.Endpoints;
 
@@ -10,8 +11,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class MemoryEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>GET /api/memory</c>, which returns a read-only snapshot of the learner's memory layers as <see cref="MemorySnapshotResponse"/> with 200, or 401 without a valid access token.
-    /// PL: Mapuje <c>GET /api/memory</c>, który zwraca migawkę warstw pamięci ucznia (tylko odczyt) jako <see cref="MemorySnapshotResponse"/> z kodem 200 albo 401 bez ważnego access tokenu.
+    /// EN: Maps <c>GET /api/memory</c>, which returns a read-only snapshot of the learner's memory layers as <see cref="MemorySnapshotResponse"/>, and <c>GET /api/memory/prompt-preview</c>, which renders the tutor system prompt without calling the LLM and returns it as <see cref="PromptPreviewResponse"/>; both return 200, or 401 without a valid access token.
+    /// PL: Mapuje <c>GET /api/memory</c>, który zwraca migawkę warstw pamięci ucznia (tylko odczyt) jako <see cref="MemorySnapshotResponse"/>, oraz <c>GET /api/memory/prompt-preview</c>, który renderuje prompt systemowy tutora bez wywołania LLM i zwraca go jako <see cref="PromptPreviewResponse"/>; oba zwracają 200 albo 401 bez ważnego access tokenu.
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder the endpoints are added to.
@@ -33,11 +34,25 @@ public static class MemoryEndpoints
             .Produces<MemorySnapshotResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/prompt-preview", GetPromptPreviewAsync)
+            .WithName("Memory_GetPromptPreview")
+            .WithSummary("Renders (without invoking an LLM) a preview of the \"tutor-system\" system prompt")
+            .WithTags("Memory")
+            .Produces<PromptPreviewResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         return endpoints;
     }
 
     private static Task<MemorySnapshotResponse> GetSnapshotAsync(
         GetMemorySnapshotHandler handler, CancellationToken cancellationToken)
         => handler.HandleAsync(cancellationToken);
+
+    private static Task<PromptPreviewResponse> GetPromptPreviewAsync(
+        string? topic,
+        SessionPhase? phase,
+        GetPromptPreviewHandler handler,
+        CancellationToken cancellationToken)
+        => handler.HandleAsync(topic, phase, cancellationToken);
 
 }
