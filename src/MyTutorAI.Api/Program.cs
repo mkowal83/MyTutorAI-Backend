@@ -1,3 +1,5 @@
+using Humanizer.Configuration;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using MyTutorAI.Api.Auth;
 using MyTutorAI.Api.Endpoints;
 using MyTutorAI.Api.ErrorHandling;
@@ -38,9 +40,17 @@ builder.Services.AddOpenApi(o =>
     o.AddOperationTransformer<BearerSecuritySchemeTransformer>();
 });
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
+    .WithOrigins(allowedOrigins)
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
+
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseCors();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

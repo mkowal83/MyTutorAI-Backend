@@ -1,4 +1,5 @@
 ﻿using MyTutorAI.Application.Contracts.Memory;
+using MyTutorAI.Application.Llm.Contracts;
 using MyTutorAI.Application.Memory;
 using MyTutorAI.Domain.Memory.Session;
 
@@ -11,8 +12,8 @@ namespace MyTutorAI.Api.Endpoints;
 public static class MemoryEndpoints
 {
     /// <summary>
-    /// EN: Maps <c>GET /api/memory</c>, which returns a read-only snapshot of the learner's memory layers as <see cref="MemorySnapshotResponse"/>, and <c>GET /api/memory/prompt-preview</c>, which renders the tutor system prompt without calling the LLM and returns it as <see cref="PromptPreviewResponse"/>; both return 200, or 401 without a valid access token.
-    /// PL: Mapuje <c>GET /api/memory</c>, który zwraca migawkę warstw pamięci ucznia (tylko odczyt) jako <see cref="MemorySnapshotResponse"/>, oraz <c>GET /api/memory/prompt-preview</c>, który renderuje prompt systemowy tutora bez wywołania LLM i zwraca go jako <see cref="PromptPreviewResponse"/>; oba zwracają 200 albo 401 bez ważnego access tokenu.
+    /// EN: Maps <c>GET /api/memory</c>, which returns a read-only snapshot of the learner's memory layers as <see cref="MemorySnapshotResponse"/>, and <c>GET /api/memory/prompt-preview</c>, which renders the tutor system prompt without calling the LLM and returns it as <see cref="PromptPreviewResponse"/>, and <c>GET /api/memory/episodes</c>, which returns all retained episodes newest first as <see cref="EpisodesResponse"/>; all return 200, or 401 without a valid access token.
+    /// PL: Mapuje <c>GET /api/memory</c>, który zwraca migawkę warstw pamięci ucznia (tylko odczyt) jako <see cref="MemorySnapshotResponse"/>, oraz <c>GET /api/memory/prompt-preview</c>, który renderuje prompt systemowy tutora bez wywołania LLM i zwraca go jako <see cref="PromptPreviewResponse"/>, oraz <c>GET /api/memory/episodes</c>, który zwraca wszystkie przechowywane epizody od najnowszego jako <see cref="EpisodesResponse"/>; wszystkie zwracają 200 albo 401 bez ważnego access tokenu.
     /// </summary>
     /// <param name="endpoints">
     /// EN: Route builder the endpoints are added to.
@@ -41,6 +42,13 @@ public static class MemoryEndpoints
             .Produces<PromptPreviewResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/episodes", GetEpisodesAsync)
+            .WithName("Memory_GetEpisodes")
+            .WithSummary("Returns the full list of a student's episodes, with the most recent ones first")
+            .WithTags("Memory")
+            .Produces<EpisodesResponse>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
         return endpoints;
     }
 
@@ -55,4 +63,7 @@ public static class MemoryEndpoints
         CancellationToken cancellationToken)
         => handler.HandleAsync(topic, phase, cancellationToken);
 
+    private static Task<EpisodesResponse> GetEpisodesAsync(
+        GetEpisodesHandler handler, CancellationToken cancellationToken)
+        => handler.HandleAsync(cancellationToken);
 }
