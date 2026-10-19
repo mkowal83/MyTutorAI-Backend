@@ -5,4 +5,7 @@
     <Project Path="src/MyTutorAI.Domain/MyTutorAI.Domain.csproj" />
     <Project Path="src/MyTutorAI.Infrastructure/MyTutorAI.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MyTutorAI.Application.Tests/MyTutorAI.Application.Tests.csproj" />
+  </Folder>
 </Solution>
