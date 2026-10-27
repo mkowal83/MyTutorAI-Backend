@@ -6,6 +6,7 @@
     <Project Path="src/MyTutorAI.Infrastructure/MyTutorAI.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MyTutorAI.Api.Tests/MyTutorAI.Api.Tests.csproj" />
     <Project Path="tests/MyTutorAI.Application.Tests/MyTutorAI.Application.Tests.csproj" />
   </Folder>
 </Solution>
