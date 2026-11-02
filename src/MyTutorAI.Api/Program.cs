@@ -1,5 +1,3 @@
-using Humanizer.Configuration;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using MyTutorAI.Api.Auth;
 using MyTutorAI.Api.Endpoints;
 using MyTutorAI.Api.ErrorHandling;
