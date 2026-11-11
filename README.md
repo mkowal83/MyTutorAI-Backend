@@ -273,3 +273,7 @@ dotnet test
 
 Po uruchomieniu API można testować w Swagger UI pod adresem `http://localhost:5035/swagger`
 (tylko w środowisku Development).
+
+## Licencja
+
+Projekt jest udostępniony na licencji MIT. Pełna treść jest w pliku [LICENSE](LICENSE).
