@@ -176,7 +176,7 @@ public sealed class SendMessageHandler
             prompts.Add(new PromptMessage(ToPromptRole(turn.Role), turn.Content));
         }
 
-        // e) Structured output — LlmException propagates (→ HTTP 502, KA3.5.3).
+        // e) Structured output — LlmException propagates (→ HTTP 502).
         var reply = await _llm.CompleteAsync<LiveTutorReplyResponse>(
             prompts, StructuredOutputRequestOptions.Default, cancellationToken);
 

@@ -150,7 +150,7 @@ public sealed class CloseSessionHandler
             new(PromptRole.User, BuildTranscript(state.Working)),
         };
 
-        // c) Structured output — LlmException propagates (→ HTTP 502, KA3.5.3); nothing has been
+        // c) Structured output — LlmException propagates (→ HTTP 502); nothing has been
         //    persisted yet, so the session stays open and ready for a retry.
         var response = await _llm.CompleteAsync<EpisodeResponse>(
             prompts, StructuredOutputRequestOptions.Default, cancellationToken);
