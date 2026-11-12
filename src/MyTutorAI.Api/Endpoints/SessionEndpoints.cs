@@ -59,7 +59,7 @@ public static class SessionEndpoints
 
         group.MapPost("/{sessionId:guid}/close", CloseAsync)
             .WithName("Sessions_Close")
-            .WithSummary("It closes the session and compresses it into an episode")
+            .WithSummary("Closes the session and compresses it into an episode")
             .WithTags("Sessions")
             .Produces<CloseSessionResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
