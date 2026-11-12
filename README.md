@@ -10,7 +10,7 @@
 > - **Tutoring rule:** the tutor does not solve tasks for the learner, enforced by the LLM's own
 >   report and a deterministic phrase detector.
 > - **Security:** JWT with rotating refresh tokens and reuse detection, per-user data isolation,
->   rate limiting.
+>   rate limiting on auth endpoints.
 > - **Run:** copy `.env.example` to `.env`, then `docker compose up -d --build`; Swagger at
 >   `http://localhost:5035/swagger`.
 >
@@ -259,7 +259,7 @@ Błędy mają wspólny format (Problem Details):
 | 401 | brak lub nieważny token |
 | 404 | zasób nie istnieje albo należy do innego użytkownika |
 | 409 | sesja jest już zamknięta, nie ma w niej żadnej wymiany albo zasób zmieniło równocześnie inne zapytanie |
-| 429 | przekroczony limit zapytań |
+| 429 | przekroczony limit zapytań do endpointów uwierzytelniania |
 | 502 | błąd modelu językowego |
 | 503 | SQL Server albo Redis jest chwilowo niedostępny; nagłówek `Retry-After` podaje, po ilu sekundach ponowić |
 

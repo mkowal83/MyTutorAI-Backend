@@ -40,14 +40,12 @@ public static class DemoEndpoints
         {
             group.MapPost("/dialogue", GenerateDialogueAsync)
                 .AddEndpointFilter<ValidationFilter<DialogueGenerationRequest>>()
-                //.RequireRateLimiting(MyTutorAI.Infrastructure.DependencyInjection.LlmRateLimiterPolicyName)
                 .WithName("Demo_GenerateDialogue")
                 .WithSummary("Generates a demo practice dialogue on the given topic (LLM)")
                 .WithTags("Demo")
                 .Produces<DialogueGenerationResponse>(StatusCodes.Status200OK)
                 .ProducesValidationProblem()
-                //.ProducesProblem(StatusCodes.Status401Unauthorized) // TODO(auth)
-                .ProducesProblem(StatusCodes.Status429TooManyRequests)
+                .ProducesProblem(StatusCodes.Status401Unauthorized)
                 .ProducesProblem(StatusCodes.Status502BadGateway);
         }
 
