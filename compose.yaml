@@ -1,0 +1,61 @@
+# Local development environment: SQL Server, Redis and the API.
+# Values come from the .env file next to this one (copy .env.example to .env)
+# or from environment variables of the shell, which take precedence.
+#
+#   docker compose up -d --build        # everything, API at http://localhost:5035/swagger
+#   docker compose up -d sqlserver redis  # databases only, API via `dotnet run`
+
+name: mytutorai
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in .env}
+    # Host port 14333 avoids a clash with a locally installed SQL Server on 1433.
+    ports:
+      - "14333:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/MyTutorAI.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Persistence__SqlServer__ConnectionString: "Server=sqlserver,1433;Database=MyTutorAI;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True"
+      Redis__ConnectionString: "redis:6379"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      Llm__ApiKey: ${LLM_API_KEY:?Set LLM_API_KEY in .env}
+      Llm__Model: ${LLM_MODEL:?Set LLM_MODEL in .env}
+      Llm__BaseUrl: ${LLM_BASE_URL:-}
+      Cors__AllowedOrigins__0: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+      Features__AllowDialogue: ${FEATURES_ALLOW_DIALOGUE:-false}
+    ports:
+      - "5035:8080"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  sqlserver-data:

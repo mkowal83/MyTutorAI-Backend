@@ -132,13 +132,20 @@ Content-Type: application/json
 }
 ```
 
-Ustawienie celu nauki:
+Uzupełnienie profilu. `PUT` nadpisuje wszystkie dane deklaratywne (pominięta lista zostaje
+wyczyszczona), a dane zebrane z rozmów zostają bez zmian. Pola `name`, `level`, `goal`,
+`nativeLanguage` i `targetLanguage` są wymagane:
 
 ```http
 PUT /api/profile
 Content-Type: application/json
 
 {
+  "name": "Anna",
+  "level": "A2",
+  "goal": "Speak more freely at work",
+  "nativeLanguage": "Polish",
+  "targetLanguage": "English",
   "goals": [{
     "goal": "Talk about my job in English",
     "reason": "I have a new colleague from Spain",
@@ -162,10 +169,18 @@ Content-Type: application/json
 ```
 
 ```json
-{ "sessionId": "9b1e…", "phase": 1, "startedAt": "2026-10-27T10:00:00Z" }
+{
+  "sessionId": "9b1e…",
+  "phase": 1,
+  "topic": "My job",
+  "opener": "Hi Anna! Today we'll focus on: My job. Start in English and I'll guide you.",
+  "startedAt": "2026-10-27T10:00:00Z"
+}
 ```
 
 Pole `phase` przyjmuje wartości `0` (sprawdzenie zadania), `1` (ćwiczenie) i `2` (podsumowanie).
+`opener` to powitanie zbudowane z pamięci ucznia: nawiązuje do kroku zaplanowanego na poprzedniej
+sesji, a jeśli go nie ma, do faktu z życia ucznia albo do tematu.
 
 Wiadomość, w której uczeń prosi o gotowy tekst:
 
@@ -225,54 +240,94 @@ Błędy mają wspólny format (Problem Details):
 | 400 | niepoprawne dane, z błędami przypisanymi do pól |
 | 401 | brak lub nieważny token |
 | 404 | zasób nie istnieje albo należy do innego użytkownika |
-| 409 | sesja jest już zamknięta albo nie ma w niej żadnej wymiany |
+| 409 | sesja jest już zamknięta, nie ma w niej żadnej wymiany albo zasób zmieniło równocześnie inne zapytanie |
 | 429 | przekroczony limit zapytań |
 | 502 | błąd modelu językowego |
+| 503 | SQL Server albo Redis jest chwilowo niedostępny; nagłówek `Retry-After` podaje, po ilu sekundach ponowić |
 
 ## Uruchomienie lokalne
 
-Wymagania: .NET 10 SDK, SQL Server, Redis.
+Wymagania: Docker z Docker Compose. Do pracy nad kodem także .NET 10 SDK.
 
-Wymaganą konfigurację podaje się przez user-secrets albo zmienne środowiskowe. Bez niej aplikacja
-nie wystartuje:
+Klucz API do modelu językowego jest wymagany do startu aplikacji. Klient obsługuje API zgodne z
+OpenAI. Z nieprawdziwym kluczem działa rejestracja, logowanie, profil i Swagger, ale rozmowa z
+tutorem kończy się błędem 502.
 
-| Klucz | Znaczenie |
+### Całość w Dockerze
+
+1. Skopiuj `.env.example` do `.env` i uzupełnij wartości. Plik `.env` nie trafia do repozytorium.
+   Zamiast pliku `.env` można ustawić te same zmienne środowiskowe w powłoce, z której
+   uruchamiasz `docker compose`.
+
+   | Zmienna | Znaczenie |
+   |---|---|
+   | `MSSQL_SA_PASSWORD` | hasło użytkownika `sa`, min. 8 znaków: wielkie i małe litery, cyfry, symbole |
+   | `JWT_SIGNING_KEY` | klucz podpisu tokenów, co najmniej 32 znaki |
+   | `LLM_API_KEY`, `LLM_MODEL` | klucz API i nazwa modelu |
+   | `LLM_BASE_URL` | opcjonalny adres API innego dostawcy niż OpenAI |
+   | `CORS_ALLOWED_ORIGIN` | adres frontendu, domyślnie `http://localhost:5173` |
+   | `FEATURES_ALLOW_DIALOGUE` | `true` włącza demonstracyjny generator dialogu `POST /api/demo/dialogue`, domyślnie `false` |
+
+2. Uruchom:
+
+   ```powershell
+   docker compose up -d --build
+   ```
+
+Compose stawia SQL Server, Redis i API. API startuje dopiero, gdy obie bazy odpowiadają, i samo
+zakłada schemat bazy. Swagger UI jest pod adresem `http://localhost:5035/swagger`.
+
+Zatrzymanie: `docker compose down`. Dane SQL Servera zostają w wolumenie, a
+`docker compose down -v` usuwa je razem z kontenerami.
+
+### API przez `dotnet run`
+
+Same bazy można uruchomić w Dockerze, a API z IDE albo z terminala:
+
+```powershell
+docker compose up -d sqlserver redis
+```
+
+Compose sprawdza zmienne dla całego pliku, więc także w tym wariancie muszą być ustawione wszystkie
+wymagane zmienne z tabeli powyżej, choć kontener API nie startuje.
+
+API potrzebuje wtedy konfiguracji przez user-secrets albo zmienne środowiskowe. Bez niej nie
+wystartuje:
+
+| Klucz | Wartość |
 |---|---|
-| `Jwt:SigningKey` | klucz podpisu, co najmniej 32 znaki |
+| `Persistence:SqlServer:ConnectionString` | `Server=localhost,14333;Database=MyTutorAI;User Id=sa;Password=<MSSQL_SA_PASSWORD>;TrustServerCertificate=True` |
+| `Redis:ConnectionString` | `localhost:6379` |
+| `Jwt:SigningKey` | co najmniej 32 znaki |
 | `Llm:ApiKey`, `Llm:Model` | klucz API i nazwa modelu |
-| `Persistence:SqlServer:ConnectionString` | połączenie z SQL Server |
-| `Redis:ConnectionString` | połączenie z Redisem |
 
-W zmiennych środowiskowych dwukropek zastępuje się podwójnym podkreślnikiem, np.
-`Jwt__SigningKey`.
-
-`Jwt:Issuer` i `Jwt:Audience` dla środowiska Development są w `appsettings.Development.json`. Poza
-nim też są wymagane. Wzór pełnej konfiguracji jest w `src/MyTutorAI.Api/appsettings.Example.json`.
-Wartości z tabeli są w nim puste i nie należy ich tam wpisywać. Każdą ustawia się osobno, np.:
+Każdą wartość ustawia się osobno, np.:
 
 ```powershell
 dotnet user-secrets set "Jwt:SigningKey" "<co najmniej 32 znaki>" --project src/MyTutorAI.Api
 ```
 
-Frontend uruchomiony lokalnie musi być na liście `Cors:AllowedOrigins` (adresy podaje się bez
-ukośnika na końcu, np. `Cors:AllowedOrigins:0` = `http://localhost:5173`), inaczej przeglądarka
-zablokuje jego zapytania.
+W zmiennych środowiskowych dwukropek zastępuje się podwójnym podkreślnikiem, np.
+`Jwt__SigningKey`. `Jwt:Issuer` i `Jwt:Audience` dla środowiska Development są w
+`appsettings.Development.json`, a wzór pełnej konfiguracji w
+`src/MyTutorAI.Api/appsettings.Example.json`. Frontend musi być na liście `Cors:AllowedOrigins`
+(adresy bez ukośnika na końcu, np. `Cors:AllowedOrigins:0` = `http://localhost:5173`).
+Generator dialogu `POST /api/demo/dialogue` włącza `Features:AllowDialogue` = `true`.
 
-Schemat bazy trzeba założyć przed pierwszym uruchomieniem. Polecenie wymaga narzędzia `dotnet-ef`:
-
-```powershell
-dotnet ef database update --project src/MyTutorAI.Infrastructure --startup-project src/MyTutorAI.Api
-```
-
-Uruchomienie aplikacji i testów:
+W środowisku Development API przy starcie samo zakłada i aktualizuje schemat bazy. Uruchomienie:
 
 ```powershell
 dotnet run --project src/MyTutorAI.Api
+```
+
+### Testy
+
+```powershell
 dotnet test
 ```
 
-Po uruchomieniu API można testować w Swagger UI pod adresem `http://localhost:5035/swagger`
-(tylko w środowisku Development).
+Testy integracyjne uruchamiają własne kontenery SQL Servera i Redisa (Testcontainers), więc
+wymagają działającego Dockera, ale nie bazy z `compose.yaml`.
 
 ## Licencja
 

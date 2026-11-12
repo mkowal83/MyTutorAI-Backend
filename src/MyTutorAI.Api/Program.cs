@@ -6,6 +6,7 @@ using MyTutorAI.Api.RateLimiting;
 using MyTutorAI.Application;
 using MyTutorAI.Application.Options;
 using MyTutorAI.Infrastructure;
+using MyTutorAI.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,11 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
 
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await app.Services.MigrateDatabaseAsync();
+}
 
 app.UseExceptionHandler();
 app.UseCors();
