@@ -116,6 +116,8 @@ flowchart LR
 
 ## Przykład użycia API
 
+![Swagger UI z endpointami MyTutorAI](assets/swagger.png)
+
 Przykłady zakładają adres `http://localhost:5035`. Poza rejestracją, logowaniem i odświeżaniem
 tokenu wszystkie endpointy wymagają nagłówka `Authorization: Bearer <accessToken>`. Odpowiedzi są
 skrócone.
