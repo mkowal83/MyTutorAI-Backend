@@ -1,5 +1,21 @@
 # MyTutorAI
 
+> **In English:** Backend for an AI English tutor that remembers the learner across sessions.
+>
+> - **Stack:** .NET 10, ASP.NET Core Minimal API, Clean Architecture, SQL Server (EF Core), Redis,
+>   OpenAI-compatible LLM, Docker Compose, xUnit + Testcontainers.
+> - **Memory:** current conversation in Redis; learner profile, progress and compressed session
+>   summaries in SQL Server.
+> - **LLM:** structured output only, with a schema repair loop; prompts in Scriban templates.
+> - **Tutoring rule:** the tutor does not solve tasks for the learner, enforced by the LLM's own
+>   report and a deterministic phrase detector.
+> - **Security:** JWT with rotating refresh tokens and reuse detection, per-user data isolation,
+>   rate limiting.
+> - **Run:** copy `.env.example` to `.env`, then `docker compose up -d --build`; Swagger at
+>   `http://localhost:5035/swagger`.
+>
+> The rest of this document is in Polish.
+
 Backend tutora języka angielskiego, który prowadzi ucznia przez wiele sesji i pamięta, co działo
 się w poprzednich. Projekt jest skierowany do dorosłych, także początkujących, którzy chcą
 swobodniej mówić po angielsku w codziennych sytuacjach w pracy.
