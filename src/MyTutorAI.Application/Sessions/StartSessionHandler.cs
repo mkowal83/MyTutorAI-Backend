@@ -143,7 +143,7 @@ public sealed class StartSessionHandler
         // 3. Opening phase based on the remainder of the previous session.
         var openPhase = PhasePolicy.DetermineOpenPhase(state);
 
-        // 4. Retarget Workflow na właściwy temat + fazę (odpowiednik start_session).
+        // 4. Retarget Workflow to the requested topic and the opening phase.
         state.Workflow.Retarget(topic, openPhase);
 
         // 5. Creation of the session record.

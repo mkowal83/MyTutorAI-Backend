@@ -84,7 +84,7 @@ public sealed class RegisterUserHandler
         }
         catch (DuplicateEmailException)
         {
-            // Równoległa rejestracja tego samego e-maila wygrała wyścig — wynik ma być taki sam jak przy zajętym e-mailu.
+            // A concurrent registration of the same email won the race; the result must match the already-taken email case.
         }
     }
 }
