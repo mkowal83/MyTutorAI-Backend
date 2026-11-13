@@ -1,5 +1,7 @@
 # MyTutorAI
 
+[![CI](https://github.com/mkowal83/MyTutorAI-Backend/actions/workflows/ci.yml/badge.svg)](https://github.com/mkowal83/MyTutorAI-Backend/actions/workflows/ci.yml)
+
 > **In English:** Backend for an AI English tutor that remembers the learner across sessions.
 >
 > - **Stack:** .NET 10, ASP.NET Core Minimal API, Clean Architecture, SQL Server (EF Core), Redis,
